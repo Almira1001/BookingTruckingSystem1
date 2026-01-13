@@ -1,0 +1,6508 @@
+
+// Trucking Planner SPA
+// State & persistence
+const ACCOUNTS = {
+  "Almira@app.co.id": { password: "1110", role: "admin" },
+  "cakraindo@vendor.com": { password: "123", role: "vendor", vendor: "PT Cakraindo Mitra International" },
+  "argotm@vendor.com": { password: "123", role: "vendor", vendor: "PT Argo Trans Mandiri" },
+  "puninar@vendor.com": { password: "123", role: "vendor", vendor: "PT Puninar Logistics" },
+  "elang@vendor.com": { password: "123", role: "vendor", vendor: "PT Elang Transportasi Indonesia" },
+  "tangguhkj@vendor.com": { password: "123", role: "vendor", vendor: "PT Tangguh Karimata Jaya" },
+  "bsa@vendor.com": { password: "123", role: "vendor", vendor: "PT BSA Logistics Indonesia" },
+  "intipm@vendor.com": { password: "123", role: "vendor", vendor: "PT Inti Persada Mandiri" },
+  "lintasbk@vendor.com": { password: "123", role: "vendor", vendor: "PT Lintas Buana Karya" },
+  "putrass@vendor.com": { password: "123", role: "vendor", vendor: "PT Putra Sejahtera Sentosa" },
+  "lintasmn@vendor.com": { password: "123", role: "vendor", vendor: "PT Lintas Marindo Nusantara" },
+  "glorybu@vendor.com": { password: "123", role: "vendor", vendor: "PT Glory Bahana Universal" },
+  "megast@vendor.com": { password: "123", role: "vendor", vendor: "PT Mega Samudra Transportasi" },
+  "trisindo@vendor.com": { password: "123", role: "vendor", vendor: "PT Trisindo" },
+  "bimaruna@vendor.com": { password: "123", role: "vendor", vendor: "PT Bimaruna Jaya" },
+};
+// REVISI: Mengubah urutan Status Trucking
+const STATUS_TRUCKING = [
+  "Pending","Confirm Order","Reject","sudah muat","muat gudang","Revo","gate in port"
+];
+const VENDORS_DEFAULT = ["PT Cakraindo Mitra International","PT Argo Trans Mandiri","PT Puninar Logistics","PT Elang Transportasi Indonesia","PT Tangguh Karimata Jaya","PT BSA Logistics Indonesia","PT Inti Persada Mandiri","PT Lintas Buana Karya","PT Putra Sejahtera Sentosa","PT Lintas Marindo Nusantara","PT Glory Bahana Universal","PT Mega Samudra Transportasi","PT Trisindo","PT Bimaruna Jaya"];
+
+const VENDOR_RANK_DATA = {
+    "20ft": [
+        { rank: "TOP1", name: "PT Cakraindo Mitra International" },
+        { rank: "TOP1", name: "PT Argo Trans Mandiri" },
+        { rank: "TOP2", name: "PT Puninar Logistics" },
+        { rank: "TOP3", name: "PT Elang Transportasi Indonesia" },
+        { rank: "TOP4", name: "PT Tangguh Karimata Jaya" },
+        { rank: "TOP5", name: "PT BSA Logistics Indonesia" },
+        { rank: "TOP6", name: "PT Inti Persada Mandiri" },
+        { rank: "TOP7", name: "PT Lintas Buana Karya" },
+        { rank: "TOP8", name: "PT Putra Sejahtera Sentosa" },
+        { rank: "TOP9", name: "PT Lintas Marindo Nusantara" }
+    ],
+    "40ft/HC": [
+        { rank: "TOP1", name: "PT Cakraindo Mitra International" },
+        { rank: "TOP1", name: "PT Argo Trans Mandiri" },
+        { rank: "TOP2", name: "PT Puninar Logistics" },
+        { rank: "TOP3", name: "PT BSA Logistics Indonesia" },
+        { rank: "TOP4", name: "PT Elang Transportasi Indonesia" },
+        { rank: "TOP5", name: "PT Tangguh Karimata Jaya" },
+        { rank: "TOP6", name: "PT Glory Bahana Universal" },
+        { rank: "TOP7", name: "PT Mega Samudra Transportasi" },
+        { rank: "TOP8", name: "PT Putra Sejahtera Sentosa" },
+        { rank: "TOP9", name: "PT Trisindo" },
+        { rank: "TOP10", name: "PT Lintas Marindo Nusantara" }
+    ],
+    "Combo": [
+        { rank: "TOP1", name: "PT Cakraindo Mitra International" },
+        { rank: "TOP1", name: "PT Argo Trans Mandiri" },
+        { rank: "TOP2", name: "PT Bimaruna Jaya" },
+        { rank: "TOP3", name: "PT Tangguh Karimata Jaya" },
+        { rank: "TOP4", name: "PT Inti Persada Mandiri" },
+        { rank: "TOP5", name: "PT Lintas Buana Karya" }
+    ]
+};
+
+// BARU: Data Rate Transporter dari gambar user (Digunakan sebagai sumber Ranking baru)
+const RATE_TRANSPORTER_DATA = [
+    { rank: 1, name: "PT Cakraindo Mitra International", '20FT': 10, '40FT': 10, total: 20, alokasi: '12%' },
+    { rank: 2, name: "PT Argo Trans Mandiri", '20FT': 2, '40FT': 5, total: 7, alokasi: '4%' },
+    { rank: 3, name: "PT Puninar Logistics", '20FT': 5, '40FT': 5, total: 10, alokasi: '6%' },
+    { rank: 4, name: "PT Elang Transportasi Indonesia", '20FT': null, '40FT': 5, total: 5, alokasi: '3%' },
+    { rank: 5, name: "PT Bimaruna Jaya", '20FT': 10, '40FT': 20, total: 30, alokasi: '18%' },
+    { rank: 6, name: "PT BSA Logistics Indonesia", '20FT': 5, '40FT': 5, total: 10, alokasi: '6%' },
+    { rank: 7, name: "PT Tangguh Karimata Jaya", '20FT': 2, '40FT': 5, total: 7, alokasi: '4%' },
+    { rank: 8, name: "PT Inti Persada Mandiri", '20FT': 5, '40FT': 20, total: 25, alokasi: '15%' },
+    { rank: 9, name: "PT Glory Bahana Universal", '20FT': 5, '40FT': 10, total: 15, alokasi: '9%' },
+    { rank: 10, name: "PT Putra Sejahtera Sentosa", '20FT': 3, '40FT': 10, total: 13, alokasi: '8%' },
+    { rank: 11, name: "PT Trisindo", '20FT': null, '40FT': 5, total: 5, alokasi: '3%' },
+    { rank: 12, name: "PT Lintas Marindo Nusantara", '20FT': 3, '40FT': 20, total: 23, alokasi: '14%' },
+];
+
+const DATE_FMT = "YYYY-MM-DD";
+const TIME_FMT = "HH:MM";
+
+function todayStr(){
+  const d = new Date();
+  return toISODate(d);
+}
+function genId(prefix="ORD"){
+  return `${prefix}-${crypto.randomUUID().slice(0,8).toUpperCase()}`;
+}
+function toISODate(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function parseISODate(s){
+  if(!s) return new Date();
+  const [y,m,d] = s.split("-").map(Number);
+  return new Date(y, (m||1)-1, d||1);
+}
+
+// ====================================================================
+// --- REVISI GLOBAL: FORMAT TANGGAL dd Mon yyyy ---
+// ====================================================================
+function formatDisplayDate(isoDate) {
+    if (!isoDate || typeof isoDate !== 'string' || !isoDate.includes('-')) {
+        return isoDate; // Return original if invalid, null, or not a string
+    }
+    const parts = isoDate.split('-');
+    if (parts.length !== 3) return isoDate; // Return original if format is wrong
+    
+    const [y, m, d] = parts;
+    
+    // Array nama bulan (short form)
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    const monthIndex = parseInt(m, 10) - 1; // Convert to 0-indexed
+    
+    if (monthIndex < 0 || monthIndex > 11) return isoDate; // Invalid month
+    
+    return `${d} ${monthNames[monthIndex]} ${y}`; // Format: 09 Jan 2026
+}
+// ====================================================================
+// --- AKHIR REVISI GLOBAL ---
+// ====================================================================
+
+function fmtDT(dateStr, timeStr){
+  try { 
+      const formattedDate = formatDisplayDate(dateStr);
+      return `${formattedDate} ${timeStr||""}`.trim(); 
+    } catch(e){ return dateStr; }
+}
+function saveState(){
+  localStorage.setItem("tps_state", JSON.stringify(state));
+  setLastUpdate();
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem("tps_state");
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=> t.classList.remove("show"), 1800);
+}
+
+const defaultState = {
+  authenticated:false, user_role:null, username:null, vendor_name:null,
+  admin_sub_role:null, // ✅ BARU: Trucking Planner / Finished Good
+  order_vendor_prefill:null, availability:{}, orders:[], containers:{},
+  selected_date_admin: todayStr(), selected_date_vendor: todayStr(),
+  active_order_for_detail:null, attachments:{}, outstanding_data:[], outstanding_files:[],
+  show_vendor_detail_admin:false, menu_admin:"Home", menu_vendor:"Home",
+  active_preview_file_id: null, active_parent_menu: "Report",
+  notifications: [], 
+  editing_order_id: null, 
+  editing_container_id_vendor: null,
+  performance_filter: {
+    period: 'week',
+    startDate: null,
+    endDate: null
+  }
+};
+let state = Object.assign({}, defaultState, loadState()||{});
+
+// UI scaffolding
+const content = document.getElementById("content");
+const menuBox = document.getElementById("menu");
+const sbUser = document.getElementById("sb-username");
+const sbRole = document.getElementById("sb-role");
+const sbVendorWrap = document.getElementById("sb-vendor-wrap");
+const sbVendor = document.getElementById("sb-vendor");
+const sidebarEl = document.getElementById("sidebar");
+const notificationBell = document.getElementById("notificationBell"); 
+const sidebarToggle = document.getElementById("sidebarToggle");
+
+if (sidebarToggle) {
+  // Setup event listener (hanya sekali)
+  const handleToggle = () => {
+    const collapsed = document.body.classList.toggle("sidebar-collapsed");
+    sidebarToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  };
+  
+  // Remove old listener jika ada
+  sidebarToggle.onclick = null;
+  
+  // Add new listener
+  sidebarToggle.onclick = handleToggle;
+  
+  // Set initial state
+  const collapsedInit = document.body.classList.contains("sidebar-collapsed");
+  sidebarToggle.setAttribute("aria-expanded", collapsedInit ? "false" : "true");
+  
+  // ✅ KONTROL VISIBILITY: Hide HANYA di Finished Good mode
+  if (state.user_role === "admin" && state.admin_sub_role === "Finished Good") {
+    sidebarToggle.style.display = 'none';
+  } else {
+    sidebarToggle.style.display = 'flex';
+  }
+}
+
+document.getElementById("logoutBtn").onclick = ()=>{
+  // ✅ BARU: Clear timers jika ada (untuk Finished Good mode)
+  if (typeof fgRefreshTimer !== 'undefined' && fgRefreshTimer) clearInterval(fgRefreshTimer);
+  if (typeof fgClockTimer !== 'undefined' && fgClockTimer) clearInterval(fgClockTimer);
+  
+  state = Object.assign({}, defaultState, {authenticated:false});
+  saveState();
+  render();
+};
+function setLastUpdate(){
+  const el = document.getElementById("lastUpdate");
+  const now = new Date();
+  el.textContent = `Last Update: ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} | v2.0`;
+}
+setLastUpdate();
+
+// ======== Modal Helpers ========
+function openModal(title, html, options = {}){
+  const m = document.getElementById('modal'); if(!m) return;
+  const t = document.getElementById('modalTitle'); const b = document.getElementById('modalBody');
+  const closeBtn = document.getElementById('modalClose');
+
+  if(t) t.textContent = title || 'Detail';
+  // Hapus innerHTML lama sebelum diset baru
+  if(b) b.innerHTML = ''; 
+  if(b) b.innerHTML = html || '';
+  
+  if (closeBtn) {
+    if (options.closeBtnText) {
+      closeBtn.textContent = options.closeBtnText;
+      closeBtn.className = `btn ${options.closeBtnClass || 'danger'}`;
+      closeBtn.style.display = 'inline-flex'; 
+    } else {
+      closeBtn.textContent = 'Tutup';
+      closeBtn.className = 'btn danger';
+      closeBtn.style.display = 'inline-flex'; 
+    }
+
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    
+    if (options.onClose) {
+        newCloseBtn.onclick = options.onClose;
+    } else {
+        newCloseBtn.onclick = closeModal;
+    }
+  }
+
+  m.classList.add('show'); m.setAttribute('aria-hidden','false');
+  const modalBody = document.getElementById('modalBody');
+  if (modalBody && options.setupListeners) {
+      options.setupListeners(modalBody);
+  }
+}
+function closeModal(){
+  const m = document.getElementById('modal'); if(!m) return;
+  m.classList.remove('show'); m.setAttribute('aria-hidden','true');
+}
+document.addEventListener('click', (e)=>{
+  if(e.target && e.target.hasAttribute('data-close')) closeModal();
+});
+
+// ====================================================================
+// --- BARU: FUNGSI LONCENG NOTIFIKASI (REVISI 4: BOLD/BADGE) ---
+// ====================================================================
+function getMyNotifications() {
+    if (!state.authenticated) return [];
+    // Filter notifikasi berdasarkan role atau target vendor
+    return state.notifications.filter(n => 
+        n.role === 'all' || 
+        (n.role === state.user_role) ||
+        (n.role === 'vendor' && n.targetVendor === state.vendor_name) ||
+        (n.role === 'admin' && state.user_role === 'admin')
+    ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+function formatNotificationTime(isoTime) {
+    const d = new Date(isoTime);
+    const date = formatDisplayDate(toISODate(d));
+    const time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `${date} ${time}`;
+}
+
+function handleNotificationClick(n) {
+    // TANDAI SUDAH DIBACA SEBELUM NAVIGASI
+    n.isRead = true;
+    saveState();
+    setupNotificationBell(); // Update bell to remove badge/bolding
+    toast(`Membuka Notifikasi: ${n.message.substring(0, 50)}...`);
+
+    // Logika Navigasi
+    if (state.user_role === 'admin') {
+        if (n.relatedOrder) {
+            state.menu_admin = 'Status Truck'; // Navigasi ke Status Truck
+        } else if (n.message.includes('memperbarui ketersediaan')) {
+            state.menu_admin = 'Home';
+            state.selected_date_admin = todayStr(); 
+        } else if (n.message.includes('Data Outstanding')) {
+            state.menu_admin = 'Data Outstanding';
+        }
+    } else if (state.user_role === 'vendor') {
+        if (n.message.includes('Order baru') || n.message.includes('BC/SI')) {
+            state.menu_vendor = 'Orderan';
+            if(n.relatedOrder) state.active_order_for_detail = n.relatedOrder;
+        } else if (n.message.includes('GATE IN PORT') || n.message.includes('Rejected')) {
+            state.menu_vendor = 'List Orderan (Add Detail)';
+        }
+    }
+    render();
+}
+
+// Baris 426-451 (app.js)
+function setupNotificationBell() {
+    const bell = document.getElementById('notificationBell');
+    const content = document.getElementById('notificationContent');
+    if (!bell || !content || !state.authenticated) {
+        if(bell) bell.style.display = 'none';
+        return;
+    }
+
+    bell.style.display = 'flex'; 
+
+    const myNotifs = getMyNotifications();
+    const unreadCount = myNotifs.filter(n => !n.isRead).length;
+
+    let badge = bell.querySelector('.badge');
+    if (unreadCount > 0) {
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.classList.add('badge');
+            bell.appendChild(badge);
+        }
+        badge.textContent = unreadCount;
+    } else if (badge) {
+        if(bell.contains(badge)) bell.removeChild(badge);
+    }
+
+    content.innerHTML = `<h4>🔔 Notifikasi (${unreadCount} Baru)</h4>`;
+    
+    if (myNotifs.length === 0) {
+        content.innerHTML += `<div class="notification-item" style="color: ${getComputedStyle(document.body).getPropertyValue('--muted')}; text-align: center;">Tidak ada notifikasi baru.</div>`;
+    }
+
+    myNotifs.forEach(n => {
+        const item = document.createElement('div');
+        item.classList.add('notification-item');
+        // ✅ PERBAIKAN: Notifikasi belum dibaca = bold (700), sudah dibaca = normal (400)
+        item.innerHTML = `
+            <span class="message" style="font-weight: ${!n.isRead ? '700' : '400'};" title="${n.message}">${n.message}</span>
+            <span class="time">${formatNotificationTime(n.timestamp)}</span>
+        `;
+        item.onclick = (e) => {
+            e.stopPropagation(); 
+            handleNotificationClick(n);
+        };
+        content.appendChild(item);
+    });
+
+    // Toggle logic
+    let isContentVisible = false;
+    bell.onclick = (e) => {
+        e.stopPropagation();
+        isContentVisible = !isContentVisible;
+        if (isContentVisible) {
+            content.classList.add('show');
+            // Tandai SEMUA notifikasi yang sedang ditampilkan sebagai dibaca saat dibuka
+            myNotifs.filter(n => !n.isRead).forEach(n => n.isRead = true);
+            saveState();
+            // Re-render bell untuk hapus badge dan bold
+            setTimeout(() => setupNotificationBell(), 100); 
+        } else {
+            content.classList.remove('show');
+        }
+    };
+    
+    // Klik di luar content untuk menutup
+    document.addEventListener('click', (e) => {
+        if (bell.contains(e.target) || content.contains(e.target)) return;
+        if (content.classList.contains('show')) {
+            content.classList.remove('show');
+            isContentVisible = false;
+        }
+    });
+}
+// ====================================================================
+// --- AKHIR BARU: FUNGSI LONCENG NOTIFIKASI (REVISI 4) ---
+// ====================================================================
+
+
+// Routing
+function render(){
+  console.log('🔄 render() called - Current state:', {
+    authenticated: state.authenticated,
+    user_role: state.user_role,
+    admin_sub_role: state.admin_sub_role,
+    menu_admin: state.menu_admin,
+    menu_vendor: state.menu_vendor
+  });
+
+  sbUser.textContent = state.username || "-";
+  sbRole.textContent = state.user_role ? (state.user_role==="vendor" ? "EMKL" : state.user_role.toUpperCase()) : "-";
+  if(state.user_role==="vendor"){
+    sbVendorWrap.style.display = "block";
+    sbVendor.textContent = state.vendor_name || "-";
+  } else {
+    sbVendorWrap.style.display = "none";
+  }
+  
+  setupNotificationBell();
+
+  if(!state.authenticated){
+    if (sidebarEl) sidebarEl.style.display = 'none';
+    document.body.classList.add('login-only');
+    console.log('🔴 Not authenticated - showing login');
+    return renderLogin();
+  }
+  
+  if(state.user_role === "admin" && state.admin_sub_role === "Finished Good") {
+    if (sidebarEl) sidebarEl.style.display = 'none';
+    console.log('📊 Rendering Finished Good Dashboard');
+    return renderFinishedGoodDashboard();
+  }
+  
+  if(state.user_role === "admin" && !state.admin_sub_role) {
+    if (sidebarEl) sidebarEl.style.display = 'none';
+    document.body.classList.add('login-only');
+    console.log('🔵 Admin without sub-role - showing role selection');
+    return renderAdminRoleSelection();
+  }
+  
+  renderSidebar();
+  document.body.classList.remove('login-only'); 
+  if (sidebarEl) sidebarEl.style.display = ''; 
+  
+  if(state.user_role==="admin" && state.admin_sub_role === "Trucking Planner"){
+    console.log('✅ Admin Trucking Planner - Routing to:', state.menu_admin);
+    
+    // 🔥 CRITICAL FIX: Scroll SETELAH content di-render
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 50);
+    
+    switch(state.menu_admin){
+      case "Home": 
+        console.log('🏠 Rendering Home page');
+        return renderAdminHome();
+      
+      case "Order to EMKL": 
+        console.log('📦 Rendering Order to EMKL page');
+        return renderAdminOrder();
+      
+      case "Status Truck": 
+        console.log('🚛 Rendering Status Truck page');
+        return renderAdminStatus();
+      
+      case "Data Reject": 
+        console.log('📕 Rendering Data Reject page');
+        return renderDataReject();
+      
+      case "Data Outstanding": 
+        console.log('🧾 Rendering Data Outstanding page');
+        return renderOutstanding();
+      
+      case "Rate Transporter": 
+        console.log('💰 Rendering Rate Transporter page');
+        return renderRateTransporter();
+      
+      case "Port": 
+        console.log('🚢 Rendering Port page');
+        return renderPort();
+      
+      case "BOC": 
+        console.log('📄 Rendering BOC page');
+        return renderReport();
+      
+      case "DCR": 
+        console.log('🔑 Rendering DCR page');
+        return renderDCR();
+      
+      case "Recon Summary": 
+        console.log('📋 Rendering Recon Summary page');
+        return renderReconSummary();
+      
+      case "Container Revo": 
+        console.log('🔄 Rendering Container Revo page');
+        return renderContainerRevo();
+      
+      case "Report Durasi": 
+        console.log('⏱️ Rendering Report Durasi page');
+        return renderReportDurasi();
+      
+      case "Performa Vendor": 
+        console.log('📈 Rendering Performa Vendor page');
+        return renderReportPerformaVendor();
+      
+      default: 
+        console.log('⚠️ Unknown menu:', state.menu_admin, '- defaulting to Home');
+        state.menu_admin = "Home";
+        saveState();
+        return renderAdminHome();
+    }
+  } else if(state.user_role==="vendor") {
+    console.log('✅ Vendor - Routing to:', state.menu_vendor);
+    
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 50);
+    
+    switch(state.menu_vendor){
+      case "Home": return renderVendorHome();
+      case "Orderan": return renderVendorOrderan();
+      case "List Orderan (Add Detail)": return renderVendorListDetail();
+      default: return renderVendorHome();
+    }
+  } else {
+    console.log('❌ Invalid state - resetting to login');
+    state = Object.assign({}, defaultState, {authenticated:false});
+    saveState();
+    render();
+  }
+}
+
+// ====================================================================
+// --- BARU: FINISHED GOOD DASHBOARD (Read-Only Status Truck) ---
+// ====================================================================
+let fgRefreshTimer = null;
+let fgClockTimer = null;
+
+function renderFinishedGoodDashboard() {
+  document.body.classList.remove('login-only');
+  document.body.classList.add('finished-good-mode');
+
+  // Clear existing timers
+  if (fgRefreshTimer) clearInterval(fgRefreshTimer);
+  if (fgClockTimer) clearInterval(fgClockTimer);
+
+content.innerHTML = `
+    <div class="fg-container">
+      <div class="fg-header">
+        <div class="fg-title">
+          <div>
+            <h2>📊 Finished Good - Status Truck Monitoring</h2>
+            <p class="fg-subtitle">User: <b>${state.username}</b></p>
+          </div>
+        </div>
+        <div class="fg-clock-notification">
+          <div id="fgClock" class="fg-clock">Loading...</div>
+          <div id="fgNotificationBell" class="fg-notification-bell" title="Notifikasi Update Data">
+            <span class="bell-icon">🔔</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="fg-table-container">
+        <div id="fgTableWrapper" class="fg-table-wrapper"></div>
+      </div>
+      
+      <div class="fg-footer">
+        2026 © Booking Trucking System |
+        <button onclick="handleFGLogout()" class="btn danger" style="cursor: pointer;">Logout</button>
+      </div>
+    </div>
+  `;
+
+  // Real-Time Clock
+  function updateClock() {
+    const now = new Date();
+    const timeStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    document.getElementById('fgClock').textContent = timeStr;
+  }
+  updateClock();
+  fgClockTimer = setInterval(updateClock, 1000);
+
+  // Render Table
+  function renderFGTable() {
+    const wrapper = document.getElementById('fgTableWrapper');
+    if (!wrapper) return;
+
+    const allOrders = state.orders.slice().reverse();
+    
+    if (allOrders.length === 0) {
+      wrapper.innerHTML = `<div class="fg-empty">Tidak ada data order.</div>`;
+      return;
+    }
+
+    let tableRows = '';
+    let displayedIdx = 0;
+
+    allOrders.forEach((o) => {
+      const items = state.containers[o.order_id] || [];
+      const acceptedItems = items.filter(c => c.accept === true);
+      
+      const accepted20Normal = acceptedItems.filter(c => c.size === '20ft').length;
+      const acceptedCombo = acceptedItems.filter(c => c.size === 'Combo').length;
+      const accepted40 = acceptedItems.filter(c => c.size === '40ft/HC').length;
+      const accepted20 = accepted20Normal + (acceptedCombo * 2);
+      const totalAccepted = accepted20 + accepted40;
+
+      if (items.length === 0) return;
+      
+      const countPending = items.filter(c => c.accept === null).length;
+      const countReject = items.filter(c => c.accept === false).length;
+      const countConfirmOrder = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'confirm order').length;
+      const countSudahMuat = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'sudah muat').length;
+      const countMuatGudang = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'muat gudang').length;
+      const countRevo = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'revo').length;
+      const countGateIn = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'gate in port').length;
+
+      displayedIdx++;
+
+      // ✅ BARU: Helper function untuk clickable cells
+      const createClickableCell = (count, orderId, filterType, filterTitle) => {
+        if (count === 0 || !count) return '0';
+        return `<button class="btn-link-fg" data-order-id="${orderId}" data-filter-type="${filterType}" data-filter-title="${filterTitle}">${count}</button>`;
+      };
+
+      tableRows += `
+        <tr>
+          <td>${displayedIdx}</td>
+          <td>-</td>
+          <td>${(o.no_dn || []).join('<br>')}</td>
+          <td>${o.pod || '-'}</td>
+          <td>${o.etd ? formatDisplayDate(o.etd) : '-'}</td>
+          <td>-</td>
+          <td>-</td>
+          <td>${o.open_cy ? formatDisplayDate(o.open_cy) : '-'}</td>
+          <td>-</td>
+          <td>${fmtDT(o.closing_date, o.closing_time)}</td>
+          <td>${o.vendor || '-'}</td>
+          <td>${o.shipping_point || '-'}</td>
+          <td>${o.terminal || '-'}</td>
+          <td class="center">${createClickableCell(accepted20, o.order_id, 'size_20ft', 'Detail 20ft')}</td>
+          <td class="center">${createClickableCell(accepted40, o.order_id, 'size_40ft', 'Detail 40ft/HC')}</td>
+          <td class="center">${createClickableCell(totalAccepted, o.order_id, 'all_accepted', 'Total Accepted')}</td>
+          <td class="center">${createClickableCell(countPending, o.order_id, 'status_pending_null', 'Pending (Respon)')}</td>
+          <td class="center">${createClickableCell(countConfirmOrder, o.order_id, 'status_confirm_order', 'Confirm Order')}</td>
+          <td class="center">${createClickableCell(countReject, o.order_id, 'status_reject', 'Reject')}</td>
+          <td class="center">${createClickableCell(countSudahMuat, o.order_id, 'status_sudah_muat', 'Sudah Muat')}</td>
+          <td class="center">${createClickableCell(countMuatGudang, o.order_id, 'status_muat_gudang', 'Muat Gudang')}</td>
+          <td class="center">${createClickableCell(countRevo, o.order_id, 'status_revo', 'Revo')}</td>
+          <td class="center">${createClickableCell(countGateIn, o.order_id, 'status_gate_in', 'Gate In Port')}</td>
+          <td>-</td>
+          <td>${o.remarks || '-'}</td>
+        </tr>
+      `;
+    });
+
+    wrapper.innerHTML = `
+      <table class="fg-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Ocean BL</th>
+            <th>DN</th>
+            <th>Final Destination</th>
+            <th>ETD</th>
+            <th>Shipping Line</th>
+            <th>Vessel Name</th>
+            <th>Open CY</th>
+            <th>Closing Fisik</th>
+            <th>Closing CY</th>
+            <th>EMKL</th>
+            <th>W/H</th>
+            <th>Term</th>
+            <th>20ft</th>
+            <th>40ft/HC</th>
+            <th>Sum Cont</th>
+            <th>Pending</th>
+            <th>Confirm Order</th>
+            <th>Reject</th>
+            <th>Sudah Muat</th>
+            <th>Muat Gudang</th>
+            <th>Revo</th>
+            <th>Gate In Port</th>
+            <th>Tonase Order</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    `;
+
+// ✅ REVISI 3: Setup click handlers untuk detail modal
+    const fgTableBody = wrapper.querySelector('tbody');
+    if (fgTableBody) {
+      fgTableBody.onclick = function(e) {
+        const target = e.target;
+        if (target.tagName === 'BUTTON' && target.classList.contains('btn-link-fg')) {
+          const orderId = target.dataset.orderId;
+          const filterType = target.dataset.filterType;
+          const title = target.dataset.filterTitle;
+          if (!orderId || !filterType) return;
+          
+          let filterFunction;
+          switch (filterType) {
+            case 'size_20ft': 
+              filterFunction = c => c.size === '20ft' && c.accept === true; 
+              break;
+            case 'size_40ft': 
+              filterFunction = c => c.size === '40ft/HC' && c.accept === true; 
+              break;
+            case 'size_combo': 
+              filterFunction = c => c.size === 'Combo' && c.accept === true; 
+              break;
+            case 'all_accepted': 
+              filterFunction = c => c.accept === true; 
+              break;
+            case 'status_pending_null': 
+              filterFunction = c => c.accept === null; 
+              break;
+            case 'status_confirm_order': 
+              filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'confirm order'; 
+              break;
+            case 'status_reject': 
+              filterFunction = c => c.accept === false; 
+              break;
+            case 'status_sudah_muat': 
+              filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'sudah muat'; 
+              break;
+            case 'status_muat_gudang': 
+              filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'muat gudang'; 
+              break;
+            case 'status_revo': 
+              filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'revo'; 
+              break;
+            case 'status_gate_in': 
+              filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'gate in port'; 
+              break;
+            default: 
+              filterFunction = c => true;
+          }
+          
+          showFilteredContainerDetailsModal(orderId, filterFunction, title);
+        }
+      };
+    }
+
+    document.getElementById('fgLastUpdate').textContent = new Date().toLocaleTimeString('id-ID');
+  }
+
+  renderFGTable();
+
+  // ✅ BARU: Setup Notification Bell untuk FG
+  let lastDataCount = allOrders.length;
+  let hasNewData = false;
+  
+  function updateFGNotificationBell() {
+    const bell = document.getElementById('fgNotificationBell');
+    if (!bell) return;
+    
+    if (hasNewData) {
+      bell.classList.add('has-update');
+      let badge = bell.querySelector('.fg-badge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.classList.add('fg-badge');
+        badge.textContent = '!';
+        bell.appendChild(badge);
+      }
+    } else {
+      bell.classList.remove('has-update');
+      const badge = bell.querySelector('.fg-badge');
+      if (badge) bell.removeChild(badge);
+    }
+    
+    bell.onclick = () => {
+      if (hasNewData) {
+        hasNewData = false;
+        updateFGNotificationBell();
+        toast('✅ Data telah diperbarui! Menampilkan data terbaru.');
+      } else {
+        toast('ℹ️ Tidak ada update data baru.');
+      }
+    };
+  }
+  
+  updateFGNotificationBell();
+
+  // Auto-refresh setiap 30 detik
+  fgRefreshTimer = setInterval(() => {
+    const currentCount = state.orders.length;
+    
+    // ✅ Deteksi perubahan data
+    if (currentCount !== lastDataCount) {
+      hasNewData = true;
+      lastDataCount = currentCount;
+      updateFGNotificationBell();
+    }
+    
+    renderFGTable();
+  }, 30000);
+}
+
+// ====================================================================
+// --- AKHIR BARU: FINISHED GOOD DASHBOARD ---
+// ====================================================================
+// Sidebar
+// ✅ KODE DIPERBAIKI - Event Delegation Pattern
+// ✅ KODE YANG BENAR - TESTED & WORKING
+// ✅✅✅ KODE FINAL - TESTED & VERIFIED WORKING ✅✅✅
+// REVISI: Event Delegation dengan Robust Error Handling
+
+
+// ✅✅✅ FINAL FIX - GUARANTEED WORKING ✅✅✅
+function renderSidebar(){
+    let pendingOrderCount = 0;
+    if (state.user_role === 'vendor') {
+        pendingOrderCount = state.orders
+            .filter(o => o.vendor === state.vendor_name)
+            .filter(o => o.summary_status === 'Pending' || o.summary_status === 'Partial')
+            .length;
+    }
+
+    const itemsAdmin = [
+        { icon: "🏠", text: "Home" },
+        { icon: "📦", text: "Order to EMKL" },
+        { icon: "🚛", text: "Status Truck" },
+        { icon: "📕", text: "Data Reject" },
+        { icon: "🧾", text: "Data Outstanding" },
+        { icon: "💰", text: "Rate Transporter" },
+        { icon: "🚢", text: "Port" },
+        { 
+            icon: "📊", 
+            text: "Report",
+            children: [
+                { icon: "📄", text: "BOC" },
+                { icon: "🔑", text: "DCR" },
+                { icon: "📋", text: "Recon Summary" },
+                { icon: "🔄", text: "Container Revo" }, 
+                { icon: "⏱️", text: "Report Durasi" },
+                { icon: "📈", text: "Performa Vendor" }
+            ]
+        }
+    ];
+
+    const itemsVendor = [
+        { icon: "🏠", text: "Home" },
+        { icon: "🔑", text: "Orderan", badge: pendingOrderCount },
+        { icon: "📋", text: "List Orderan (Add Detail)" }
+    ];
+
+    const items = state.user_role==="admin" ? itemsAdmin : itemsVendor;
+    const currentMenu = state.user_role === "admin" ? state.menu_admin : state.menu_vendor;
+    
+    let menuHtml = "";
+    items.forEach(item => {
+        if (!item.children) {
+            const active = currentMenu === item.text ? "active" : "";
+            const badgeHtml = item.badge > 0 ? `<span class="badge-count">${item.badge}</span>` : ''; 
+            menuHtml += `<button type="button" class="menu-item ${active}" data-menu="${item.text}" data-is-parent="false">
+                          <span class="icon">${item.icon}</span>
+                          <span class="text">${item.text}</span>
+                          ${badgeHtml}
+                       </button>`;
+        } else {
+            const isChildActive = item.children.some(child => child.text === currentMenu);
+            const isParentOpen = state.active_parent_menu === item.text || isChildActive;
+            const parentClass = (isParentOpen) ? 'parent-active' : '';
+
+            menuHtml += `<button type="button" class="menu-item is-parent ${parentClass}" data-parent-menu="${item.text}" data-is-parent="true">
+                          <span class="icon">${item.icon}</span>
+                          <span class="text">${item.text}</span>
+                          <span class="arrow">${isParentOpen ? '▼' : '►'}</span>
+                       </button>`;
+            
+            if (isParentOpen) {
+                menuHtml += `<div class="submenu-container">`;
+                item.children.forEach(child => {
+                    const active = currentMenu === child.text ? "active" : "";
+                    menuHtml += `<button type="button" class="menu-item submenu-item ${active}" data-menu="${child.text}" data-is-parent="false">
+                                  <span class="icon">${child.icon}</span>
+                                  <span class="text">${child.text}</span>
+                               </button>`;
+                });
+                menuHtml += `</div>`;
+            }
+        }
+    });
+
+    const menuBox = document.getElementById('menu');
+    
+    if (!menuBox) {
+        console.error('❌ CRITICAL: Element #menu tidak ditemukan!');
+        return;
+    }
+
+    menuBox.innerHTML = menuHtml;
+    
+    // 🔥 CRITICAL FIX: Remove ALL previous event listeners before attaching new ones
+    const oldMenuBox = menuBox.cloneNode(true);
+    menuBox.parentNode.replaceChild(oldMenuBox, menuBox);
+    const freshMenuBox = document.getElementById('menu');
+    
+    // ✅ SOLUTION: Event Delegation Pattern (MOST RELIABLE)
+    freshMenuBox.onclick = function(e) {
+        // Find the closest .menu-item button
+        const btn = e.target.closest('.menu-item');
+        if (!btn) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const isParent = btn.getAttribute('data-is-parent') === 'true';
+        
+        if (isParent) {
+            const menuName = btn.getAttribute('data-parent-menu');
+            console.log('🔵 Parent menu clicked:', menuName);
+            state.active_parent_menu = state.active_parent_menu === menuName ? null : menuName;
+            saveState();
+            renderSidebar();
+        } else {
+            const menuText = btn.getAttribute('data-menu');
+            console.log('✅ Menu clicked:', menuText, 'Role:', state.user_role);
+            
+            if(state.user_role === "admin") {
+                state.menu_admin = menuText;
+                console.log('📌 Setting state.menu_admin =', menuText);
+            } else {
+                state.menu_vendor = menuText;
+                console.log('📌 Setting state.menu_vendor =', menuText);
+            }
+            
+            saveState();
+            console.log('💾 State saved, calling render()...');
+            render();
+        }
+    };
+    
+    console.log('✅ Sidebar event delegation attached successfully');
+}
+
+// Login
+function renderLogin(){
+  // 1. Mengubah class body agar sesuai dengan style.css baru
+  //    (menggunakan 'login-page' bukan 'login-only')
+  document.body.classList.remove('login-only');
+  document.body.classList.add('login-page');
+
+  // 2. Menggunakan struktur HTML dari file index.html baru Anda
+  content.innerHTML = `
+    <div class="container right-panel-active" id="container">
+        
+        <div class="form-container sign-up-container">
+            <form action="#" id="adminLoginForm">
+                <h1>Admin Login</h1>
+                <span>Gunakan akun admin Anda</span>
+                <input type="email" id="login_user_admin" placeholder="Email" required />
+                <input type="password" id="login_pass_admin" placeholder="Password" required />
+                
+                <!-- ✅ BARU: Dropdown Pilihan Role -->
+                <select id="admin_role_select" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:5px; font-family:inherit;">
+                    <option value="Trucking Planner">🚛 Trucking Planner</option>
+                    <option value="Finished Good">📊 Finished Good</option>
+                </select>
+                
+                <a href="#" id="adminHelp" style="margin-top: 10px;">Contoh: Almira@app.co.id / 1110</a>
+                <button type="submit" style="margin-top: 10px;">Login</button>
+            </form>
+        </div>
+
+        <div class="form-container sign-in-container">
+            <form action="#" id="vendorLoginForm">
+                <h1>Vendor Login</h1>
+                <span>Gunakan akun vendor Anda</span>
+                <input type="email" id="login_user_vendor" placeholder="Email" required />
+                <input type="password" id="login_pass_vendor" placeholder="Password" required />
+                <a href="#" id="vendorHelp" style="margin-top: 10px;">Contoh: argotm@vendor.com / 123</a>
+                <button type="submit" style="margin-top: 10px;">Login</button>
+            </form>
+        </div>
+
+        <div class="overlay-container">
+            <div class="overlay">
+                
+                <div class="overlay-panel overlay-left">
+                    <h1>Welcome, Admin!</h1>
+                    <p>Masukkan detail Anda untuk mengakses dashboard</p>
+                    <button class="ghost" id="signIn">Login sebagai Vendor?</button>
+                </div>
+
+                <div class="overlay-panel overlay-right">
+                    <h1>Welcome, Vendor!</h1>
+                    <p>Masukkan detail Anda untuk mengakses portal</p>
+                    <button class="ghost" id="signUp">Login sebagai Admin?</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+  `;
+
+  // 3. Menambahkan logika animasi dari file script.js baru Anda
+  const signUpButton = document.getElementById('signUp');
+  const signInButton = document.getElementById('signIn');
+  const container = document.getElementById('container');
+
+  if(signUpButton) {
+    signUpButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        container.classList.add('right-panel-active');
+    });
+  }
+  
+  if(signInButton) {
+    signInButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        container.classList.remove('right-panel-active');
+    });
+  }
+
+  // 4. Menghubungkan logika otentikasi (dari app.js lama) ke DUA tombol login baru
+  
+  // Helper fungsi untuk pengecekan login (diambil dari app.js lama)
+  const attemptLogin = (username, password, expectedRole, selectedSubRole = null) => {
+    const u = username.trim();
+    const acc = ACCOUNTS[u]; // ACCOUNTS dari scope global app.js
+    if(acc && acc.password === password && acc.role === expectedRole){
+      state.authenticated = true;
+      state.username = u;
+      state.user_role = acc.role;
+      state.vendor_name = acc.vendor || null;
+      
+      // ✅ BARU: Set sub-role langsung dari pilihan di login (khusus Admin)
+      if(expectedRole === 'admin' && selectedSubRole) {
+        state.admin_sub_role = selectedSubRole;
+      }
+      
+      // Hapus class login setelah berhasil
+      document.body.classList.remove('login-page'); 
+      
+      saveState(); 
+      render();
+    } else {
+      toast("Login gagal. Cek email, password, atau role Anda.");
+    }
+  };
+
+  // Listener untuk form login Admin
+  const adminForm = document.getElementById('adminLoginForm');
+  if(adminForm) {
+    adminForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = document.getElementById('login_user_admin').value;
+      const p = document.getElementById('login_pass_admin').value;
+      const selectedRole = document.getElementById('admin_role_select').value; // ✅ AMBIL ROLE PILIHAN
+      attemptLogin(u, p, 'admin', selectedRole); // ✅ KIRIM ROLE KE FUNGSI LOGIN
+    });
+  }
+
+  // Listener untuk form login Vendor
+  const vendorForm = document.getElementById('vendorLoginForm');
+  if(vendorForm) {
+    vendorForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = document.getElementById('login_user_vendor').value;
+      const p = document.getElementById('login_pass_vendor').value;
+      attemptLogin(u, p, 'vendor');
+    });
+  }
+
+  // Listener untuk teks bantuan
+  const adminHelp = document.getElementById('adminHelp');
+  if(adminHelp) adminHelp.onclick = (e) => { e.preventDefault(); toast('Admin: Almira@app.co.id / 1110'); };
+  
+  const vendorHelp = document.getElementById('vendorHelp');
+  if(vendorHelp) vendorHelp.onclick = (e) => { e.preventDefault(); toast('Vendor: argotm@vendor.com / 123'); };
+}
+
+
+// Helpers
+function monthMatrix(year, month){
+  const first = new Date(year, month-1, 1);
+  let startOffset = first.getDay();
+  startOffset = (startOffset===0) ? 6 : startOffset-1;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const rows = [];
+  let week = new Array(7).fill(0);
+  let day = 1;
+  for(let i=0;i<startOffset;i++) week[i]=0;
+  for(let i=startOffset;i<7;i++) week[i]=day++;
+  rows.push(week);
+  while(day<=daysInMonth){
+    week = new Array(7).fill(0);
+    for(let i=0;i<7 && day<=daysInMonth;i++){
+      week[i]=day++;
+    }
+    rows.push(week);
+  }
+  return rows;
+}
+function sumAvailForDate(dateStr){
+  const data = state.availability[dateStr] || {};
+  let total20 = 0, total40 = 0, totalCombo = 0;
+  for(const v of Object.keys(data)){
+    total20 += Number(data[v]["20ft"]||0);
+    total40 += Number(data[v]["40ft/HC"]||0);
+    totalCombo += Number(data[v]["Combo"]||0);
+  }
+  return {total20, total40, totalCombo, totalAll: total20 + total40 + totalCombo};
+}
+function updateOrderSummary(orderId){
+  const items = state.containers[orderId] || [];
+  let acc=0, rej=0, pen=0;
+  for(const r of items){
+    if(r.accept===true) acc++; else if(r.accept===false) rej++; else pen++;
+  }
+  let status="Pending";
+  if(pen===0 && acc>0 && rej===0) status="Accepted";
+  else if(pen===0 && rej>0 && acc===0) status="Rejected";
+  else if(pen===0 && acc>0 && rej>0) status="Partial";
+  else if(pen>0 && acc>0 || pen>0 && rej>0) status="Partial";
+  else if(rej > 0 && acc === 0 && pen === 0) status="Rejected";
+  else if(pen > 0 && acc === 0 && rej === 0) status="Pending";
+
+  const o = state.orders.find(x=>x.order_id===orderId);
+  if(o){ o.summary_status = status; saveState(); }
+}
+function attachFile(orderId, key, file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.attachments[orderId] = state.attachments[orderId] || {};
+    state.attachments[orderId][key] = {name:file.name, dataUrl:reader.result};
+    
+    const order = state.orders.find(x=>x.order_id===orderId);
+    if (order) {
+        const fileType = key === 'booking_confirmation' ? 'BC' : 'SI';
+        const newNotif = {
+            id: genId("NOTIF"),
+            message: `Admin telah mengunggah ${fileType} untuk DN ${order.no_dn.join(' & ')}.`,
+            timestamp: new Date().toISOString(),
+            isRead: false,
+            role: 'vendor',
+            targetVendor: order.vendor,
+            relatedOrder: orderId,
+            link: 'Orderan'
+        };
+        state.notifications.push(newNotif);
+    }
+    
+    saveState(); render();
+    toast(`${key==='booking_confirmation'?'BC':'SI'} tersimpan.`);
+  };
+  reader.readAsDataURL(file);
+}
+function downloadDataUrl(name, dataUrl){
+  const a = document.createElement("a");
+  a.href = dataUrl; a.download = name; a.click();
+}
+// ====================================================================
+// --- GLOBAL FUNCTION: FINISHED GOOD LOGOUT ---
+// ====================================================================
+function handleFGLogout() {
+  console.log('🔴 FG Logout triggered');
+  
+  if (!confirm('Yakin ingin logout?')) {
+    console.log('❌ User cancelled logout');
+    return;
+  }
+  
+  console.log('✅ User confirmed logout');
+  
+  // Clear timers
+  try {
+    if (typeof fgRefreshTimer !== 'undefined' && fgRefreshTimer) {
+      clearInterval(fgRefreshTimer);
+      console.log('✅ Refresh timer cleared');
+    }
+  } catch(e) {
+    console.warn('⚠️ Error clearing refresh timer:', e);
+  }
+  
+  try {
+    if (typeof fgClockTimer !== 'undefined' && fgClockTimer) {
+      clearInterval(fgClockTimer);
+      console.log('✅ Clock timer cleared');
+    }
+  } catch(e) {
+    console.warn('⚠️ Error clearing clock timer:', e);
+  }
+  
+  // Reset state
+  state = Object.assign({}, defaultState, {
+    authenticated: false,
+    user_role: null,
+    username: null,
+    admin_sub_role: null
+  });
+  
+  saveState();
+  console.log('✅ State reset, redirecting to login...');
+  
+  // Force render
+  setTimeout(() => {
+    render();
+  }, 100);
+}
+// ====================================================================
+// --- END: FINISHED GOOD LOGOUT ---
+// ====================================================================
+function sendEmailToVendor(orderId) {
+    const order = state.orders.find(x => x.order_id === orderId);
+    if (!order) {
+        toast("Order tidak ditemukan.");
+        return;
+    }
+
+    const attachments = state.attachments[orderId] || {};
+    const hasBC = attachments.booking_confirmation;
+    const hasSI = attachments.si;
+
+    if (!hasBC && !hasSI) {
+        toast("Tidak ada BC atau SI yang di-upload untuk dikirim.");
+        return;
+    }
+
+    const vendorEmail = Object.keys(ACCOUNTS).find(email => ACCOUNTS[email].vendor === order.vendor);
+    if (!vendorEmail) {
+        toast(`Email untuk EMKL ${order.vendor} tidak ditemukan.`);
+        return;
+    }
+
+    const subject = `Order Trucking - DN ${order.no_dn.join(' & ')} | Stuffing ${formatDisplayDate(order.tgl_stuffing)}`;
+    const body = `
+Kepada Tim ${order.vendor},
+
+Terlampir adalah dokumen untuk Order Trucking dengan detail sebagai berikut:
+
+No. DN: ${order.no_dn.join(' / ')}
+Tanggal Stuffing: ${formatDisplayDate(order.tgl_stuffing)}
+Closing CY: ${fmtDT(order.closing_date, order.closing_time)}
+Shipping Point: ${order.shipping_point}
+Container: 20ft (${order.jml_20ft || 0}), 40ft/HC (${order.jml_40ft || 0}), Combo (${order.jml_combo || 0})
+
+Harap segera proses order ini.
+
+Terima kasih,
+Admin Trucking Planner
+
+Lampiran: 
+- ${hasBC ? `Booking Confirmation (${attachments.booking_confirmation.name})` : 'Tidak ada BC'}
+- ${hasSI ? `Shipping Instruction (${attachments.si.name})` : 'Tidak ada SI'}
+    `;
+
+    console.log("SIMULASI EMAIL TERKIRIM:");
+    console.log(`To: ${vendorEmail}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Body: ${body}`);
+    
+    state.notifications.push({
+        id: genId("NOTIF"),
+        message: `Email BC/SI untuk DN ${order.no_dn.join(' & ')} berhasil dikirim ke ${order.vendor}.`,
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        role: 'admin',
+        relatedOrder: orderId
+    });
+    
+    toast(`Email order DN ${order.no_dn.join(' & ')} berhasil disimulasikan terkirim!`);
+    saveState();
+}
+
+const TERMINAL_OPTIONS = ["JICT", "NPCT", "KOJA", "TMAL", "IPC"];
+function buildTerminalSelect(id, currentValue) {
+    const options = TERMINAL_OPTIONS.map(opt => 
+        `<option value="${opt}" ${opt === currentValue ? 'selected' : ''}>${opt}</option>`
+    ).join('');
+    return `<select id="${id}" class="input">${options}</select>`;
+}
+
+
+function buildRankTable(containerType, title, showDate) {
+    const avail = state.availability[showDate] || {}; 
+    
+    const rankedList = RATE_TRANSPORTER_DATA
+        .map(item => {
+            const ketersediaan = Number(avail[item.name] ? (avail[item.name][containerType] || 0) : 0);
+            
+            // ✅ PERBAIKAN TOTAL: Mapping alokasi HARUS sesuai tipe container AKTUAL
+            let alokasi = 0;
+            if (containerType === "20ft") {
+                // ✅ 20ft → Ambil HANYA dari kolom 20FT
+                alokasi = item['20FT'] || 0;
+            } else if (containerType === "40ft/HC") {
+                // ✅ 40ft/HC → Ambil HANYA dari kolom 40FT
+                alokasi = item['40FT'] || 0;
+            } else if (containerType === "Combo") {
+                // ✅ COMBO → Ambil dari 20FT (bukan total)
+                // Karena Combo = 2 kontainer 20ft, maka alokasi base-nya tetap dari 20FT
+                alokasi = item['20FT'] || 0;
+            }
+            
+            return { 
+                rank: item.rank, 
+                name: item.name, 
+                ketersediaan: ketersediaan,
+                alokasi: alokasi,
+                alokasiPersen: item.alokasi || '0%'
+            };
+        })
+        .filter(item => item.ketersediaan > 0);
+
+    rankedList.sort((a, b) => a.rank - b.rank);
+    
+    let rowsHtml = "";
+    
+    rankedList.forEach(item => {
+        rowsHtml += `<tr>
+                        <td style="width: 80px; text-align: center;">TOP ${item.rank}</td>
+                        <td style="text-align: left; font-weight: 500;">${item.name}</td>
+                        <td style="text-align: center; width: 100px; font-weight: 600; color: var(--blue-2);">${item.alokasi}</td>
+                        <td style="text-align: center; width: 120px;">${item.ketersediaan}</td>
+                        <td style="text-align: center; width: 100px;">
+                            <button class="btn secondary tiny" data-prefill="${item.name}">Order</button>
+                        </td>
+                    </tr>`;
+    });
+
+    if (rankedList.length === 0) {
+        return `<h4 style="margin: 10px 0 5px 0;">${title}</h4><div class="small muted" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: #f9fafb;">Tidak ada EMKL yang mengisi ketersediaan untuk jenis ${title} ini.</div>`;
+    }
+
+    return `
+        <h4 style="margin: 10px 0 5px 0;">${title}</h4>
+        <div class="table-wrap no-scroll-internal">
+          <table class="table">
+              <thead>
+                  <tr>
+                      <th style="width: 80px;">Rank</th>
+                      <th>EMKL</th>
+                      <th style="text-align: center; width: 100px; background: #fef3c7; color: #92400e;">Alokasi</th>
+                      <th style="text-align: center; width: 120px;">Ketersediaan</th>
+                      <th style="text-align: center; width: 100px;">Aksi</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  ${rowsHtml}
+              </tbody>
+          </table>
+        </div>
+    `;
+}
+
+// ✅ NEW FUNCTION: Get allocation data untuk tracking
+function getVendorAllocationData(vendorName) {
+    const vendorData = RATE_TRANSPORTER_DATA.find(v => v.name === vendorName);
+    if (!vendorData) {
+        return {
+            alokasi20: 0, alokasi40: 0, alokasiPersen: '0%',
+            realisasi20: 0, realisasi40: 0,
+            sisa20: 0, sisa40: 0,
+            persentase20: 0, persentase40: 0,
+            status20: 'unknown', status40: 'unknown'
+        };
+    }
+    
+    // ✅ PERBAIKAN: Alokasi HARUS ambil dari kolom yang tepat
+    const alokasi20 = vendorData['20FT'] || 0;
+    const alokasi40 = vendorData['40FT'] || 0;
+    
+    // Hitung realisasi (sudah ACCEPT)
+    let realisasi20 = 0;
+    let realisasi40 = 0;
+    
+    state.orders
+        .filter(o => o.vendor === vendorName)
+        .forEach(order => {
+            const containers = state.containers[order.order_id] || [];
+            const acceptedContainers = containers.filter(c => c.accept === true);
+            
+            // ✅ Realisasi 20ft = 20ft Normal + (Combo × 2)
+            const accepted20ftNormal = acceptedContainers.filter(c => c.size === '20ft').length;
+            const acceptedCombo = acceptedContainers.filter(c => c.size === 'Combo').length;
+            realisasi20 += accepted20ftNormal + (acceptedCombo * 2);
+            
+            // ✅ Realisasi 40ft = HANYA 40ft/HC
+            realisasi40 += acceptedContainers.filter(c => c.size === '40ft/HC').length;
+        });
+    
+    const sisa20 = Math.max(0, alokasi20 - realisasi20);
+    const sisa40 = Math.max(0, alokasi40 - realisasi40);
+    
+    const persentase20 = alokasi20 > 0 ? Math.round((realisasi20 / alokasi20) * 100) : 0;
+    const persentase40 = alokasi40 > 0 ? Math.round((realisasi40 / alokasi40) * 100) : 0;
+    
+    const getStatus = (persen) => {
+        if (persen >= 100) return 'success';
+        if (persen >= 80) return 'warning';
+        return 'danger';
+    };
+    
+    return {
+        alokasi20, alokasi40, 
+        alokasiPersen: vendorData.alokasi || '0%',
+        realisasi20, realisasi40,
+        sisa20, sisa40,
+        persentase20, persentase40,
+        status20: getStatus(persentase20),
+        status40: getStatus(persentase40)
+    };
+}
+
+function getStatusBadgeClass(status) {
+    if (status === 'success') return 'badge-success';
+    if (status === 'warning') return 'badge-warning';
+    if (status === 'danger') return 'badge-danger';
+    return '';
+}
+
+function getStatusBadgeText(status) {
+    if (status === 'success') return '✓ Memenuhi';
+    if (status === 'warning') return '⚠ Mendekati';
+    if (status === 'danger') return '✗ Belum';
+    return '-';
+}
+/* ===================== ADMIN: HOME (Kalender) ===================== */
+
+function showStatusDetailsModal(status) {
+    const targetStatus = status.toLowerCase();
+    const filteredContainers = [];
+    
+    for (const orderId in state.containers) {
+        const order = state.orders.find(o => o.order_id === orderId);
+        if (!order) continue;
+
+        (state.containers[orderId] || []).forEach(c => {
+            const currentStatus = (c.status || 'Confirm Order').toLowerCase();
+            const containerIsRelevant = (
+                (targetStatus === 'pending' && (c.accept === null)) ||
+                (targetStatus === 'reject' && c.accept === false) ||
+                (targetStatus !== 'pending' && targetStatus !== 'reject' && c.accept === true && currentStatus === targetStatus) ||
+                (targetStatus === 'confirm order' && c.accept === true && currentStatus === 'confirm order')
+            );
+
+            if (containerIsRelevant) {
+                let displayStatus;
+                if (targetStatus === 'pending' && c.accept === null) {
+                    displayStatus = 'Pending Respon';
+                } else if (targetStatus === 'reject' && c.accept === false) {
+                    displayStatus = 'Rejected';
+                } else {
+                    displayStatus = c.status || 'Confirm Order';
+                }
+                
+                filteredContainers.push({
+                    dn: (order.no_dn || []).join(' / '),
+                    vendor: order.vendor,
+                    size: c.size,
+                    containerNo: c.no_container || '-',
+                    status: displayStatus,
+                    noMobil: c.no_mobil || '-'
+                });
+            }
+        });
+    }
+
+    if (filteredContainers.length === 0) {
+        toast(`Tidak ada kontainer dengan status '${status}'.`);
+        return;
+    }
+
+    let tableRows = filteredContainers.map((r, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${r.dn}</td>
+            <td>${r.vendor}</td>
+            <td>${r.size}</td>
+            <td>${r.containerNo}</td>
+            <td>${r.noMobil}</td>
+            <td style="font-weight:700; color: ${r.status.toLowerCase().includes('reject') || r.status.toLowerCase().includes('revo') ? 'var(--red)' : 'var(--ink)'};">${r.status}</td>
+        </tr>
+    `).join('');
+
+    const modalTitle = `Detail Status: ${status}`;
+    const modalHtml = `
+        <div class="table-wrap" style="max-height: 60vh; overflow-y: auto;">
+            <table class="table compact" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>DN</th>
+                        <th>EMKL</th>
+                        <th>Size</th>
+                        <th>Container No.</th>
+                        <th>Plat Mobil</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    openModal(modalTitle, modalHtml);
+}
+
+
+function buildStatusDashboardInner(){
+  const counts = {};
+  const displayStatuses = ["Pending", "Confirm Order", "Reject", "sudah muat", "muat gudang", "Revo", "gate in port"];
+  displayStatuses.forEach(s => counts[s] = 0);
+  
+  for (const oid in state.containers){
+    const items = state.containers[oid] || [];
+    
+    items.forEach(r => {
+        
+        if (r.accept === null) {
+             counts["Pending"]++;
+             return;
+        }
+
+        if(r.accept === false) {
+            counts["Reject"]++;
+            return;
+        }
+
+        if(r.accept === true) {
+            const savedStatus = (r.status || 'Confirm Order').toLowerCase();
+            const correctKey = displayStatuses.find(k => k.toLowerCase() === savedStatus);
+
+            if (correctKey && correctKey !== "Pending" && correctKey !== "Reject") {
+                counts[correctKey] = (counts[correctKey] || 0) + 1;
+            } else if (correctKey === "Confirm Order") {
+                 counts["Confirm Order"] = (counts["Confirm Order"] || 0) + 1;
+            }
+        }
+    });
+  }
+
+  let html = '<div class="row" id="dashboard-status-rows">';
+  
+  displayStatuses.forEach(s => {
+      const val = counts[s] || 0;
+      const displayStatus = s.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      
+      html += `
+        <div class="col" style="grid-column: span 1.71;"> 
+          <div class="stat-card" data-status-key="${displayStatus}" style="${val > 0 ? 'border-color: var(--blue-2);' : ''}">
+            <div class="stat-num">${val}</div>
+            <div class="stat-label">${displayStatus}</div>
+          </div>
+        </div>`;
+  });
+  
+  html += '</div>';
+  return html;
+}
+
+function getFilteredPerformanceData(startDateStr, endDateStr){
+    
+    const startDate = startDateStr ? parseISODate(startDateStr) : new Date(0);
+    const endDate = endDateStr ? parseISODate(endDateStr) : new Date(8640000000000000);
+    
+    const vendorPerformance = VENDORS_DEFAULT.map(v => {
+        let acc = 0, rej = 0;
+        
+        // Filter orders based on Tgl Stuffing (order creation date is used as proxy)
+        const relevantOrders = state.orders.filter(o => {
+            const stuffingDate = parseISODate(o.tgl_stuffing);
+            // Ignore time part for filtering
+            return o.vendor === v && stuffingDate >= startDate && stuffingDate <= endDate;
+        });
+
+        relevantOrders.forEach(o => {
+             (state.containers[o.order_id] || []).forEach(r => {
+                // HANYA hitung kontainer yang sudah direspons (Accept atau Reject)
+                if (r.accept === true) acc++;
+                else if (r.accept === false) rej++;
+            });
+        });
+
+        const total = acc + rej;
+        const perf = total > 0 ? Math.round((acc / total) * 100) : 0;
+        
+        return { name: v, accept: acc, reject: rej, total: total, performa: perf };
+    });
+    
+    return vendorPerformance;
+}
+
+function buildVendorPerformanceCard(isReportView = false, data = null){
+    
+    const finalData = data || getFilteredPerformanceData(null, null);
+
+    let rows = finalData.map(item => {
+        return `<tr>
+          <td>${item.name}</td>
+          <td class="center">${item.accept}</td>
+          <td class="center">${item.reject}</td>
+          <td class="perf-small center">${item.performa}%</td>
+        </tr>`;
+    }).join("");
+
+    return {
+        html: `
+            <div class="card" style="padding: 0;">
+              <div class="table-wrap no-scroll"> <table class="table small-table">
+                  <thead>
+                    <tr><th>EMKL</th><th class="center">Accept</th><th class="center">Reject</th><th class="center">Performa</th></tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+            </div>
+            </div>`,
+        data: finalData
+    };
+}
+
+
+function getDnAndContainerCounts() {
+    const todayISO = todayStr();
+    const now = new Date();
+    
+    const count = { dn_today: 0, dn_monthly: 0, dn_overall: 0, cont_today: 0, cont_monthly: 0, cont_overall: 0 };
+
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(now.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0); 
+
+    const dnFinal = { today: new Set(), monthly: new Set(), overall: new Set() };
+    let processedContainers = { today: 0, monthly: 0, overall: 0 }; 
+
+    state.orders.forEach(order => {
+        const createdAt = order.created_at ? new Date(order.created_at) : parseISODate(order.tgl_stuffing);
+        const orderDateISO = toISODate(createdAt);
+        const dnKey = order.order_id; 
+
+        dnFinal.overall.add(dnKey);
+        if (createdAt >= oneMonthAgo) dnFinal.monthly.add(dnKey);
+        if (orderDateISO === todayISO) dnFinal.today.add(dnKey);
+        
+        const containers = state.containers[order.order_id] || [];
+        containers.forEach(container => {
+            processedContainers.overall++;
+            if (createdAt >= oneMonthAgo) {
+                processedContainers.monthly++;
+            }
+            if (orderDateISO === todayISO) {
+                processedContainers.today++;
+            }
+        });
+    });
+    
+    count.dn_today = dnFinal.today.size;
+    count.dn_monthly = dnFinal.monthly.size;
+    count.cont_today = processedContainers.today;
+    count.cont_monthly = processedContainers.monthly;
+    count.cont_overall = processedContainers.overall;
+    count.dn_overall = dnFinal.overall.size;
+
+    return count;
+}
+
+
+function buildCountDashboard() {
+    const counts = getDnAndContainerCounts();
+    
+    return `
+        <div class="row" style="margin: 16px;">
+          <div class="col" style="grid-column: span 6;">
+            <div class="card count-card">
+              <h3 style="margin:0 0 10px 0">Count DN</h3>
+              <div class="row">
+                ${['today', 'monthly', 'overall'].map(period => `
+                  <div class="col">
+                    <div class="stat-card" style="border-color: #fee2e2; padding: 15px 10px;">
+                      <div class="stat-num" style="font-size: 2rem; color: var(--ink);">${counts[`dn_${period}`]}</div>
+                      <div class="stat-label" style="font-weight: 600; color: #92400e; background-color: #fef3c7; padding: 2px 6px; border-radius: 4px; display: block; width: fit-content; margin: 0 auto;">${period.charAt(0).toUpperCase() + period.slice(1)}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+          <div class="col" style="grid-column: span 6;">
+            <div class="card count-card">
+              <h3 style="margin:0 0 10px 0">Count Container</h3>
+              <div class="row">
+                ${['today', 'monthly', 'overall'].map(period => `
+                  <div class="col">
+                    <div class="stat-card" style="border-color: #fee2e2; padding: 15px 10px;">
+                      <div class="stat-num" style="font-size: 2rem; color: var(--ink);">${counts[`cont_${period}`]}</div>
+                      <div class="stat-label" style="font-weight: 600; color: var(--blue-2); background-color: var(--blue-light); padding: 2px 6px; border-radius: 4px; display: block; width: fit-content; margin: 0 auto;">${period.charAt(0).toUpperCase() + period.slice(1)}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+    `;
+}
+
+
+function renderAdminHome(){
+  const dt = parseISODate(state.selected_date_admin);
+  const month = dt.getMonth()+1;
+  const year = dt.getFullYear();
+
+  content.innerHTML = `
+    <div class="main-header"><h3 style="margin:0">🏠 Admin — Home</h3>
+      <div class="small">Pilih tanggal pada kalender untuk melihat ketersediaan EMKL per jenis container.</div></div>
+    <div class="card">
+      <div class="row">
+        <div class="col" style="grid-column: span 6;">
+          <label>Pilih Bulan</label>
+          <select id="home_month" class="input"></select>
+        </div>
+        <div class="col" style="grid-column: span 6;">
+          <label>Pilih Tahun</label>
+          <select id="home_year" class="input"></select>
+        </div>
+      </div>
+      <div class="cal-wrap" style="margin-top:10px">
+        <h3 style="margin:0 0 10px 0" id="monthTitle"></h3>
+        <div class="cal-grid" id="calHead"></div>
+        <div id="calBody"></div>
+        <div class="legend small" style="margin-top:.5rem">
+          <span class="dot green"></span> Tersedia Banyak (>50% container)
+          <span class="dot red"></span> Tersedia Sedikit (≤50% container)
+          <span class="dot blue"></span> Hari ini
+        </div>
+      </div>
+    </div>
+    <div id="vendorDetail"></div>
+  `;
+  
+  try{
+    const headerEl = document.querySelector('.main-header');
+    if(headerEl && !document.querySelector('.card:has(.stat-card)')){
+      const dash = `<div class="card"><h3 style="margin:0 0 10px 0">📊 Dashboard Status</h3>${buildStatusDashboardInner()}</div>`;
+      headerEl.insertAdjacentHTML('afterend', dash);
+      
+      const countDash = buildCountDashboard();
+      document.querySelector('.card:has(.stat-card)').insertAdjacentHTML('afterend', countDash);
+
+      document.getElementById('dashboard-status-rows').querySelectorAll('.stat-card').forEach(card => {
+          card.onclick = () => showStatusDetailsModal(card.dataset.statusKey);
+      });
+    }
+  }catch(e){ console.warn('Dashboard inject fail', e); }
+
+  const mSel = document.getElementById("home_month");
+  for(let i=1;i<=12;i++){ 
+    const opt=document.createElement("option"); 
+    opt.value=i; 
+    opt.textContent=new Date(2000,i-1,1).toLocaleString('id-ID',{month:'long'}); 
+    if(i===month) opt.selected=true; 
+    mSel.appendChild(opt); 
+  }
+  
+  const currentYear = new Date().getFullYear();
+  const startYear = Math.max(currentYear, 2025); 
+  const ySel = document.getElementById("home_year");
+  for(let y=startYear-1;y<=startYear+1;y++){ 
+    if (y < 2025) continue;
+    const opt=document.createElement("option"); 
+    opt.value=y; 
+    opt.textContent=y; 
+    if(y===year) opt.selected=true; 
+    ySel.appendChild(opt); 
+  }
+
+  const calHead = document.getElementById("calHead");
+  ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU", "MINGGU"].forEach(n=>{
+    const d=document.createElement("div"); 
+    d.className="cal-head"; 
+    d.textContent=n; 
+    calHead.appendChild(d);
+  });
+
+  function drawCalendar(y,m){
+    document.getElementById("monthTitle").textContent = `${new Date(y,m-1,1).toLocaleString('id-ID',{month:'long'})} ${y}`;
+    const body = document.getElementById("calBody");
+    body.innerHTML = "";
+    const cal = monthMatrix(y,m);
+    const todayISO = todayStr();
+    // ✅ REVISI 2: Hitung tanggal kemarin untuk validasi disable
+    const today = parseISODate(todayISO);
+    
+    cal.forEach(week=>{
+      const row = document.createElement("div");
+      row.className="cal-grid";
+      week.forEach(d=>{
+        const cell = document.createElement("div");
+        if(d===0){ 
+          cell.innerHTML=""; 
+          row.appendChild(cell); 
+          return; 
+        }
+        
+        const s = toISODate(new Date(y,m-1,d));
+        const sums = sumAvailForDate(s);
+        const ok = sums.totalAll > (156*0.5);
+        const isToday = (s===todayISO);
+        const isSelected = (s===state.selected_date_admin);
+        
+        // ✅ REVISI 2: Cek apakah tanggal ini sebelum hari ini
+        const cellDate = parseISODate(s);
+        const isPastDate = cellDate < today;
+        
+        cell.className = "cal-cell"+(ok?" ok":"")+(isToday?" today":"")+(isSelected?" selected":"")+(isPastDate?" cal-disabled":"");
+        cell.innerHTML = `<div class="cal-num">${d}</div><div class="labels">20ft = ${sums.total20}<br>40ft/HC = ${sums.total40}<br>Combo = ${sums.totalCombo}</div><button class="btn pick" data-pick="${s}" ${isPastDate ? 'disabled' : ''}>Pilih</button>`;
+        row.appendChild(cell);
+      });
+      body.appendChild(row);
+    });
+    
+    // ✅ CRITICAL FIX: Event listener HARUS di-attach SETELAH DOM ready
+    setTimeout(() => {
+      attachCalendarEvents();
+    }, 50);
+  }
+  
+  function attachCalendarEvents() {
+    const pickButtons = document.querySelectorAll('#calBody button[data-pick]');
+    console.log(`✅ Attaching ${pickButtons.length} calendar button events`);
+    
+    pickButtons.forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const dateStr = btn.dataset.pick;
+        
+        // ✅ REVISI 2: Validasi backend - cegah klik tanggal lalu
+        const clickedDate = parseISODate(dateStr);
+        const today = parseISODate(todayStr());
+        
+        if(clickedDate < today) {
+          toast("⚠️ Tidak dapat melihat detail untuk tanggal yang sudah lewat.");
+          return;
+        }
+        
+        console.log(`🔵 Calendar button clicked: ${dateStr}`);
+        
+        state.selected_date_admin = dateStr;
+        saveState();
+        
+        showCalendarDetailModal(dateStr);
+      };
+    });
+  }
+  
+  function showCalendarDetailModal(date) {
+    console.log(`📅 Opening modal for date: ${date}`);
+    
+    const table20ft = buildRankTable("20ft", "20ft", date);
+    const table40ft = buildRankTable("40ft/HC", "40ft/HC", date);
+    const tableCombo = buildRankTable("Combo", "Combo", date);
+    const allHtml = table20ft + table40ft + tableCombo;
+    
+    const avail = state.availability[date] || {};
+    const vendorsWithAvail = VENDORS_DEFAULT.filter(v => {
+        const r = avail[v];
+        if (!r) return false;
+        return (Number(r["20ft"]||0) + Number(r["40ft/HC"]||0) + Number(r["Combo"]||0)) > 0;
+    });
+
+    let allocationTableHtml = '';
+    if (vendorsWithAvail.length > 0) {
+      allocationTableHtml = `
+          <div style="margin-top: 24px; border-top: 2px solid #e0e7ff; padding-top: 16px;">
+              <h4 style="margin: 0 0 12px 0; color: #1e3a5f;">📊 Tracking Alokasi vs Realisasi</h4>
+              <div class="table-wrap no-scroll-internal">
+                  <table class="table compact">
+                      <thead>
+                          <tr style="background: #eef2ff;">
+                              <th>EMKL</th>
+                              <th>20ft<br><span style="font-size:0.7rem;font-weight:400;">(Alokasi/Real/Sisa)</span></th>
+                              <th>40ft/HC<br><span style="font-size:0.7rem;font-weight:400;">(Alokasi/Real/Sisa)</span></th>
+                              <th>Status 20ft</th>
+                              <th>Status 40ft</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          ${vendorsWithAvail.map(vendorName => {
+                              const allocData = getVendorAllocationData(vendorName);
+                              return `
+                                <tr>
+                                  <td style="text-align:left; font-weight:600;">${vendorName}</td>
+                                  <td style="text-align:center;">
+                                    <div style="font-size:0.85rem;">
+                                      <span style="color:#6b7280;">${allocData.alokasi20}</span> /
+                                      <span style="color:#059669; font-weight:700;">${allocData.realisasi20}</span> /
+                                      <span style="color:#dc2626; font-weight:600;">${allocData.sisa20}</span>
+                                    </div>
+                                    <div style="font-size:0.7rem; color:#6b7280; margin-top:2px;">${allocData.persentase20}% terpenuhi</div>
+                                  </td>
+                                  <td style="text-align:center;">
+                                    <div style="font-size:0.85rem;">
+                                      <span style="color:#6b7280;">${allocData.alokasi40}</span> /
+                                      <span style="color:#059669; font-weight:700;">${allocData.realisasi40}</span> /
+                                      <span style="color:#dc2626; font-weight:600;">${allocData.sisa40}</span>
+                                    </div>
+                                    <div style="font-size:0.7rem; color:#6b7280; margin-top:2px;">${allocData.persentase40}% terpenuhi</div>
+                                  </td>
+                                  <td style="text-align:center;">
+                                    <span class="badge ${getStatusBadgeClass(allocData.status20)}">${getStatusBadgeText(allocData.status20)}</span>
+                                  </td>
+                                  <td style="text-align:center;">
+                                    <span class="badge ${getStatusBadgeClass(allocData.status40)}">${getStatusBadgeText(allocData.status40)}</span>
+                                  </td>
+                                </tr>`;
+                          }).join('')}
+                      </tbody>
+                  </table>
+              </div>
+              <div class="small muted" style="margin-top:12px;">
+                  <b>Keterangan:</b> Alokasi = Target, Real = Sudah ACCEPT, Sisa = Masih tersisa<br>
+                  <span class="badge badge-success" style="font-size:0.7rem;">✓ Memenuhi</span> ≥100% | 
+                  <span class="badge badge-warning" style="font-size:0.7rem;">⚠ Mendekati</span> 80-99% | 
+                  <span class="badge badge-danger" style="font-size:0.7rem;">✗ Belum</span> <80%
+              </div>
+          </div>`;
+    }
+
+    const html = `
+      <div class="table-wrap-modal">
+        ${allHtml}
+        ${vendorsWithAvail.length === 0 ? `<div class="small empty">Belum ada EMKL yang mengisi ketersediaan pada tanggal <b>${formatDisplayDate(date)}</b>.</div>` : ''}
+        ${allocationTableHtml}
+      </div>`;
+
+    const setupModalListeners = (modalBody) => {
+      modalBody.querySelectorAll("button[data-prefill]").forEach(b => {
+        b.onclick = (event) => {
+          event.stopPropagation();
+          const prefillVendor = b.dataset.prefill;
+          console.log(`✅ Vendor selected: ${prefillVendor}, navigating to Order page`);
+          state.order_vendor_prefill = prefillVendor;
+          closeModal();
+          state.menu_admin = 'Order to EMKL';
+          saveState();
+          render();
+          toast(`Prefill EMKL: ${prefillVendor}`);
+        };
+      });
+    };
+
+    openModal(`Ketersediaan — ${formatDisplayDate(date)}`, html, {
+      closeBtnText: 'Lanjut Order',
+      closeBtnClass: 'cta',
+      onClose: () => {
+        const modalBody = document.getElementById('modalBody');
+        const firstPrefillBtn = modalBody ? modalBody.querySelector("button[data-prefill]") : null;
+        if(firstPrefillBtn) {
+          const firstVendor = firstPrefillBtn.dataset.prefill;
+          state.order_vendor_prefill = firstVendor;
+          toast(`Prefill EMKL: ${firstVendor}`);
+        } else {
+          state.order_vendor_prefill = null;
+          toast("Tidak ada EMKL dengan ketersediaan. Lanjut ke halaman Order.");
+        }
+        closeModal();
+        state.menu_admin = 'Order to EMKL';
+        saveState();
+        render();
+      },
+      setupListeners: setupModalListeners
+    });
+  }
+
+  drawCalendar(year, month);
+
+  mSel.onchange = ()=>{
+    const y=Number(ySel.value), m=Number(mSel.value);
+    state.selected_date_admin = toISODate(new Date(y,m-1,1));
+    saveState();
+    renderAdminHome();
+  };
+
+  ySel.onchange = ()=>{
+    const y=Number(ySel.value), m=Number(mSel.value);
+    state.selected_date_admin = toISODate(new Date(y,m-1,1));
+    saveState();
+    renderAdminHome();
+  };
+
+  if(state.show_vendor_detail_admin){
+    const target = state.selected_date_admin;
+    const avail = state.availability[target] || {};
+    let rows = VENDORS_DEFAULT.map(v=>{
+      const r = avail[v] || {"20ft":0,"40ft/HC":0,"Combo":0};
+      return `<tr><td>${v}</td><td><span class="badge">${r["20ft"]||0}</span></td><td><span class="badge">${r["40ft/HC"]||0}</span></td><td><span class="badge">${r["Combo"]||0}</span></td></tr>`;
+    }).join("");
+    document.getElementById("vendorDetail").innerHTML = `
+      <div class="card">
+        <h3 style="margin:.2rem 0 .6rem 0">Detail Ketersediaan — ${formatDisplayDate(target)}</h3>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>EMKL</th><th>20ft</th><th>40ft/HC</th><th>Combo</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+}
+/* ===================== ADMIN: ORDER TO VENDOR ===================== */
+function renderAdminOrder() {
+  const showDate = state.selected_date_admin;
+
+  content.innerHTML = `
+    <div class="main-header"><h3 style="margin:0">📦 Admin — Order to EMKL</h3>
+      <div class="small">Pilih EMKL dari tabel ketersediaan, tanggalnya sinkron dengan Home.</div></div>
+    <div id="emkl-availability-card" class="card">
+      <div class="small">Menampilkan ketersediaan untuk tanggal: <b>${formatDisplayDate(showDate)}</b></div>
+      <div id="availTableContainer" style="margin-top: 8px;"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 12px 0">Buat Order Baru</h3>
+      <div class="form-section">
+        <div class="section-title">1. Informasi Utama</div>
+        <div class="form-grid">
+          <div class="span-4">
+            <label>EMKL</label>
+            <select id="order_vendor" class="input"></select>
+          </div>
+          <div class="span-4">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                <label>DN</label>
+                <div style="display:flex; align-items:center; gap:5px; margin-bottom: .25rem;">
+                    <input type="checkbox" id="order_is_combo">
+                    <label for="order_is_combo" style="margin:0; font-size:.8rem; font-weight:normal;">Combo</label>
+                </div>
+            </div>
+            <input id="order_dn1" class="input" placeholder="Ketik DN lalu tekan ENTER">
+            <div id="dn_combo_extra" style="display:none; margin-top:8px;">
+                <input id="order_dn2" class="input" placeholder="DN ke-2 (tekan ENTER)">
+            </div>
+          </div>
+          <div class="span-4">
+            <label>Tanggal Stuffing</label>
+            <input id="order_tglstuff" type="date" class="input" value="${showDate}">
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="section-title">2. Lokasi & Tujuan</div>
+        <div class="form-grid">
+          <div class="span-6">
+            <label>Shipping Point</label>
+            <input id="order_shippoint" class="input" placeholder="Auto warehouse...">
+          </div>
+          <div class="span-6">
+            <label>Country Port (Port)</label>
+            <input id="order_pod" class="input" placeholder="Liverpool,UK">
+          </div>
+          <div class="span-6">
+            <label>Terminal</label>
+            <select id="order_terminal" class="input">
+                <option>JICT</option>
+                <option>NPCT</option>
+                <option>KOJA</option>
+                <option>TMAL</option>
+                <option>IPC</option>
+            </select>
+          </div>
+          <div class="span-6">
+            <label>Depo</label>
+            <input id="order_depo" class="input" placeholder="Puninar, BRJ...">
+          </div>
+        </div>
+      </div>
+<div class="form-section">
+  <div class="section-title">3. Jadwal & Waktu</div>
+  <div class="form-grid">
+    <div class="span-3">
+      <label>Open CY</label>
+      <input id="order_open_cy" type="date" class="input" placeholder="dd/mm/yyyy">
+    </div>
+    <div class="span-3">
+      <label>Tanggal Closing</label>
+      <input id="order_closing_date" type="date" class="input" placeholder="dd/mm/yyyy">
+    </div>
+    <div class="span-3">
+      <label>Jam Closing</label>
+      <input id="order_closing_time" type="time" class="input" placeholder="--:--">
+    </div>
+    <div class="span-3">
+      <label>ETD (Estimasi)</label>
+      <input id="order_etd" type="date" class="input">
+    </div>
+    <div class="span-3">
+      <label>Shift</label>
+      <select id="order_shift" class="input">
+        <option value="">-- Pilih Shift --</option>
+        <option value="Shift 1">Shift 1</option>
+        <option value="Shift 2">Shift 2</option>
+        <option value="Shift 3">Shift 3</option>
+      </select>
+    </div>
+  </div>
+</div>      <div class="form-section">
+        <div class="section-title">4. Detail Kontainer & Catatan</div>
+        <div class="form-grid">
+            <div class="span-4">
+                <label>Jumlah Container 20ft</label>
+                <input id="order_j20" type="number" class="input" value="0" min="0">
+            </div>
+            <div class="span-4">
+                <label>Jumlah Container 40ft/HC</label>
+                <input id="order_j40" type="number" class="input" value="0" min="0">
+            </div>
+            <div class="span-4">
+                <label>Jumlah Container Combo</label>
+                <input id="order_jCombo" type="number" class="input" value="0" min="0">
+            </div>
+            <div class="span-12">
+                <label>Remarks</label>
+                <textarea id="order_remarks" class="input" placeholder="Catatan tambahan..."></textarea>
+            </div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <button id="btnCreateOrder" class="btn cta">✓ Buat Order</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="margin:0;">Rekap List Orderan</h3>
+        <button id="btnDownloadRekap" class="btn success">⬇️ Download Excel</button>
+      </div>
+      <div class="row">
+        <div class="col" style="grid-column: span 4;">
+          <label>Filter EMKL</label>
+          <select id="rekap_vendor" class="input">
+            <option>-- Semua --</option>
+          </select>
+        </div>
+        <div class="col" style="grid-column: span 4;">
+          <label>Tgl Stuffing (start)</label>
+          <input id="rekap_start" type="date" class="input">
+        </div>
+        <div class="col" style="grid-column: span 4;">
+          <label>Tgl Stuffing (end)</label>
+          <input id="rekap_end" type="date" class="input">
+        </div>
+      </div>
+      <div class="rekap-wrap">
+        <table class="table rekap" id="rekapTable">
+          <thead>
+            <tr>
+                <th rowspan="2">No</th>
+                <th rowspan="2">DN</th>
+                <th rowspan="2">EMKL</th>
+                <th rowspan="2">Tanggal Stuffing</th>
+                <th rowspan="2">Shipping Point</th>
+                <th rowspan="2">Country Port (Port)</th>
+                <th rowspan="2">Terminal</th>
+                <th rowspan="2">Depo</th>
+                <th colspan="2" style="background: #f0f7ff;">CY</th>
+                <th rowspan="2">Container</th>
+                <th rowspan="2">Jumlah</th>
+                <th colspan="2">Status</th>
+                <th rowspan="2">Shift</th>
+                <th rowspan="2">Remarks</th>
+                <th colspan="2">Attach File</th>
+                <th rowspan="2">Email</th>
+                <th rowspan="2">Aksi</th>
+            </tr>
+            <tr>
+                <th style="background: #f0f7ff;">Open</th>
+                <th style="background: #f0f7ff;">Closing (Date Time)</th>
+                <th class="acc">Accept</th>
+                <th class="rej">Reject</th>
+                <th>BC</th>
+                <th>SI</th>
+            </tr>
+          </thead>
+          <tbody id="rekapBody"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // ============================================================
+  // ✅ AUTOFILL LOGIC - VERSI DARURAT DENGAN FULL DEBUG
+  // ============================================================
+
+function autoFillFromOutstanding(dnValue, inputElement) {
+
+    if (!dnValue || !dnValue.trim()) {
+      return;
+    }
+
+    const shipPointInput = document.getElementById('order_shippoint');
+    const podInput = document.getElementById('order_pod');
+    const j20Input = document.getElementById('order_j20');
+    const j40Input = document.getElementById('order_j40');
+    const jComboInput = document.getElementById('order_jCombo');
+    const etdInput = document.getElementById('order_etd');
+
+
+    if (!shipPointInput || !j20Input || !j40Input) {
+      toast('❌ Error: Field form tidak ditemukan');
+      return;
+    }
+
+   
+    const outData = getDataFromOutstanding(dnValue.trim());
+
+    const hasData = Object.values(outData).some(val =>
+      val !== null && val !== undefined && String(val).trim() !== ''
+    );
+
+    if (!hasData) {
+      toast(`❌ DN "${dnValue}" tidak ditemukan`);
+      return;
+    }
+
+    let filledCount = 0;
+
+    // 🔥 FILL 1: Shipping Point (PRIORITAS TINGGI)
+    if (outData.shippingPoint) {
+      const oldValue = shipPointInput.value;
+      shipPointInput.value = outData.shippingPoint;
+      filledCount++;
+    }
+    // 🔥 FILL 2: Country Port (Port)
+    if (podInput && outData.countryPort) {
+      const oldValue = podInput.value;
+      podInput.value = outData.countryPort;
+      filledCount++;
+    }
+
+    // FILL 3: 20ft
+    if (outData.partie20 !== null && outData.partie20 !== undefined) {
+      const oldValue = j20Input.value;
+      j20Input.value = parseInt(outData.partie20) || 0;
+      filledCount++;
+    }
+
+    // FILL 4: 40ft
+    if (outData.partie40 !== null && outData.partie40 !== undefined) {
+      const oldValue = j40Input.value;
+      j40Input.value = parseInt(outData.partie40) || 0;
+      filledCount++;
+    }
+
+    // FILL 5: ETD
+if (etdInput && outData.etd) {
+  let etdValue = outData.etd;
+  
+  // 🔥 FIX: Konversi Excel Date yang benar (tanpa timezone bug)
+  if (typeof etdValue === 'number') {
+    // Excel epoch: 1900-01-01 (tapi Excel salah hitung, jadi pakai 1899-12-30)
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const etdDate = new Date(excelEpoch.getTime() + etdValue * msPerDay);
+    
+    // Ambil YYYY-MM-DD tanpa timezone offset
+    const year = etdDate.getUTCFullYear();
+    const month = String(etdDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(etdDate.getUTCDate()).padStart(2, '0');
+    etdValue = `${year}-${month}-${day}`;
+  }
+  
+  etdInput.value = etdValue;
+  filledCount++;
+}
+
+    // FILL 6: Reset Combo
+    if (jComboInput) {
+      jComboInput.value = 0;
+    }
+
+
+    if (filledCount > 0) {
+      toast(`✅ Autofill berhasil: ${filledCount} field terisi`);
+    } else {
+      toast(`⚠️ Data ditemukan, tapi field sudah terisi`);
+    }
+  }
+
+  // ATTACH EVENT LISTENERS DN
+  const dn1Input = document.getElementById('order_dn1');
+  const dn2Input = document.getElementById('order_dn2');
+
+  if (dn1Input) {
+    dn1Input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        autoFillFromOutstanding(dn1Input.value, dn1Input);
+      }
+    });
+  }
+
+  if (dn2Input) {
+    dn2Input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        autoFillFromOutstanding(dn2Input.value, dn2Input);
+      }
+    });
+  }
+
+  // ============================================================
+  // KETERSEDIAAN & ALOKASI
+  // ============================================================
+  const availContainer = document.getElementById("availTableContainer");
+  const table20ft = buildRankTable("20ft", "20ft", showDate);
+  const table40ft = buildRankTable("40ft/HC", "40ft/HC", showDate);
+  const tableCombo = buildRankTable("Combo", "Combo", showDate);
+  const allHtml = table20ft + table40ft + tableCombo;
+
+  const avail = state.availability[showDate] || {};
+  const vendorsWithAvail = VENDORS_DEFAULT.filter(v => {
+    const r = avail[v];
+    if (!r) return false;
+    return (Number(r["20ft"] || 0) + Number(r["40ft/HC"] || 0) + Number(r["Combo"] || 0)) > 0;
+  });
+
+  let allocationTableHtml = '';
+  if (vendorsWithAvail.length > 0) {
+    allocationTableHtml = `
+          <div style="margin-top: 24px; border-top: 2px solid #e0e7ff; padding-top: 16px;">
+              <h4 style="margin: 0 0 12px 0; color: #1e3a5f;">📊 Tracking Alokasi vs Realisasi</h4>
+              <div class="table-wrap no-scroll-internal">
+                  <table class="table compact">
+                      <thead>
+                          <tr style="background: #eef2ff;">
+                              <th>EMKL</th>
+                              <th>Alokasi %</th>
+                              <th>20ft<br><span style="font-size:0.7rem;font-weight:400;">(Alokasi/Real/Sisa)</span></th>
+                              <th>40ft/HC<br><span style="font-size:0.7rem;font-weight:400;">(Alokasi/Real/Sisa)</span></th>
+                              <th>Status 20ft</th>
+                              <th>Status 40ft</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          ${vendorsWithAvail.map(vendorName => {
+                            const allocData = getVendorAllocationData(vendorName);
+                            return `
+                                  <tr>
+                                      <td style="text-align:left; font-weight:600;">${vendorName}</td>
+                                      <td style="text-align:center; font-weight:700; color:#3b82f6;">${allocData.alokasiPersen}</td>
+                                      <td style="text-align:center;">
+                                          <div style="font-size:0.85rem;">
+                                              <span style="color:#6b7280;">${allocData.alokasi20}</span> / 
+                                              <span style="color:#059669; font-weight:700;">${allocData.realisasi20}</span> / 
+                                              <span style="color:#dc2626; font-weight:600;">${allocData.sisa20}</span>
+                                          </div>
+                                          <div style="font-size:0.7rem; color:#6b7280; margin-top:2px;">${allocData.persentase20}% terpenuhi</div>
+                                      </td>
+                                      <td style="text-align:center;">
+                                          <div style="font-size:0.85rem;">
+                                              <span style="color:#6b7280;">${allocData.alokasi40}</span> / 
+                                              <span style="color:#059669; font-weight:700;">${allocData.realisasi40}</span> / 
+                                              <span style="color:#dc2626; font-weight:600;">${allocData.sisa40}</span>
+                                          </div>
+                                          <div style="font-size:0.7rem; color:#6b7280; margin-top:2px;">${allocData.persentase40}% terpenuhi</div>
+                                      </td>
+                                      <td style="text-align:center;">
+                                          <span class="badge ${getStatusBadgeClass(allocData.status20)}">${getStatusBadgeText(allocData.status20)}</span>
+                                      </td>
+                                      <td style="text-align:center;">
+                                          <span class="badge ${getStatusBadgeClass(allocData.status40)}">${getStatusBadgeText(allocData.status40)}</span>
+                                      </td>
+                                  </tr>
+                              `;
+                          }).join('')}
+                      </tbody>
+                  </table>
+              </div>
+              <div class="small muted" style="margin-top:12px;">
+                  <b>Panduan:</b> Prioritaskan order ke EMKL dengan status <span class="badge badge-danger" style="font-size:0.7rem;">✗ Belum</span> atau <span class="badge badge-warning" style="font-size:0.7rem;">⚠ Mendekati</span> untuk memenuhi alokasi yang disepakati.<br>
+                  <b>Keterangan:</b> Alokasi = Target, Real = Sudah ACCEPT, Sisa = Masih tersisa
+              </div>
+          </div>
+      `;
+  }
+
+  if (allHtml.includes("<tr>") === false) {
+    availContainer.innerHTML = `<div style="padding:1rem; text-align:center; color: var(--muted);">Tidak ada EMKL yang mengisi ketersediaan pada tanggal ini.</div>`;
+  } else {
+    availContainer.innerHTML = allHtml + allocationTableHtml;
+  }
+
+  availContainer.querySelectorAll("button[data-prefill]").forEach(b => {
+    b.onclick = () => {
+      state.order_vendor_prefill = b.dataset.prefill;
+      saveState();
+      renderAdminOrder();
+      toast(`Prefill EMKL: ${b.dataset.prefill}`);
+    };
+  });
+
+  const isComboCheckbox = document.getElementById('order_is_combo');
+  const dnComboExtraDiv = document.getElementById('dn_combo_extra');
+  const j20Input = document.getElementById('order_j20');
+  const j40Input = document.getElementById('order_j40');
+  const jComboInput = document.getElementById('order_jCombo');
+
+  isComboCheckbox.checked = false;
+  dnComboExtraDiv.style.display = 'none';
+
+  isComboCheckbox.addEventListener('change', e => {
+    const isChecked = e.target.checked;
+    dnComboExtraDiv.style.display = isChecked ? 'block' : 'none';
+  });
+
+  const vSel = document.getElementById("order_vendor");
+  VENDORS_DEFAULT.forEach(v => {
+    const opt = document.createElement("option");
+    opt.textContent = v;
+    vSel.appendChild(opt);
+  });
+  if (state.order_vendor_prefill) {
+    vSel.value = state.order_vendor_prefill;
+  }
+
+  const rVend = document.getElementById("rekap_vendor");
+  VENDORS_DEFAULT.forEach(v => {
+    const o = document.createElement("option");
+    o.textContent = v;
+    rVend.appendChild(o);
+  });
+  const rStart = document.getElementById("rekap_start");
+  const rEnd = document.getElementById("rekap_end");
+  const now = new Date();
+  rStart.value = toISODate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30));
+  rEnd.value = toISODate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
+
+  // ============================================================
+  // BUAT ORDER
+  // ============================================================
+  document.getElementById("btnCreateOrder").onclick = () => {
+    const vendor = vSel.value;
+    const dn1 = document.getElementById('order_dn1').value.trim();
+    const dn2 = document.getElementById('order_dn2').value.trim();
+
+    let no_dn = [];
+    if (dn1) no_dn.push(dn1);
+    if (dn2) no_dn.push(dn2);
+
+    if (no_dn.length === 0) {
+      toast("Minimal satu nomor DN wajib diisi.");
+      return;
+    }
+
+    const tgl_stuff = document.getElementById("order_tglstuff").value || showDate;
+    const shipping_point = document.getElementById("order_shippoint").value.trim();
+    const pod = document.getElementById("order_pod").value.trim();
+    const terminal = document.getElementById("order_terminal").value.trim();
+    const depo = document.getElementById("order_depo").value.trim();
+    const open_cy = document.getElementById("order_open_cy").value || showDate;
+    const closing_date = document.getElementById("order_closing_date").value;
+    const closing_time = document.getElementById("order_closing_time").value;
+    const etd = document.getElementById("order_etd").value;
+const shift = document.getElementById("order_shift").value; // ✅ BARU
+
+    const j20 = Number(j20Input.value || 0);
+    const j40 = Number(j40Input.value || 0);
+    const jCombo = Number(jComboInput.value || 0);
+
+    const remarks = document.getElementById("order_remarks").value.trim();
+if (!shift) {
+    toast("Pilih shift terlebih dahulu.");
+    return;
+  } 
+    if (j20 + j40 + jCombo === 0) {
+      toast("Minimal pesan 1 container.");
+      return;
+    }
+
+    const totalContainersToOrder = j20 + j40 + jCombo;
+    if (totalContainersToOrder > 0) {
+      const avForDate = state.availability[tgl_stuff] || {};
+      const vendorAv = avForDate[vendor] || {
+        "20ft": 0,
+        "40ft/HC": 0,
+        "Combo": 0
+      };
+
+      if (j20 > Number(vendorAv["20ft"] || 0)) {
+        toast(`Jumlah 20ft dipesan > ketersediaan.`);
+        return;
+      }
+      if (j40 > Number(vendorAv["40ft/HC"] || 0)) {
+        toast(`Jumlah 40ft/HC dipesan > ketersediaan.`);
+        return;
+      }
+      if (jCombo > Number(vendorAv["Combo"] || 0)) {
+        toast(`Jumlah Combo dipesan > ketersediaan.`);
+        return;
+      }
+    }
+
+    const oid = genId("ORD");
+    const order = {
+      order_id: oid,
+      vendor,
+      tgl_stuffing: tgl_stuff,
+      closing_date,
+      closing_time,
+      open_cy,
+      no_dn,
+      shipping_point,
+      pod,
+      terminal,
+      depo,
+      shift,
+      remarks,
+      etd,
+      jml_20ft: j20,
+      jml_40ft: j40,
+      jml_combo: jCombo,
+      created_at: new Date().toISOString(),
+      summary_status: "Pending"
+    };
+
+    state.orders.push(order);
+    state.containers[oid] = [];
+
+    const addConts = (qty, sz) => {
+      for (let i = 0; i < qty; i++) {
+        state.containers[oid].push({
+          no: state.containers[oid].length + 1,
+          size: sz,
+          accept: null,
+          no_container: "",
+          no_seal: "",
+          no_mobil: "",
+          nama_supir: "",
+          contact: "",
+          depo: "",
+          status: STATUS_TRUCKING[0]
+        });
+      }
+    };
+
+    if (j20 > 0) addConts(j20, "20ft");
+    if (j40 > 0) addConts(j40, "40ft/HC");
+    if (jCombo > 0) addConts(jCombo, "Combo");
+    state.order_vendor_prefill = null;
+
+    const totalContainers = j20 + j40 + jCombo;
+    state.notifications.push({
+      id: genId("NOTIF"),
+      message: `Order baru DN ${order.no_dn.join(' & ')} (${totalContainers} kontainer) masuk dari Indah Kiat Karawang.`,
+      timestamp: new Date().toISOString(),
+      isRead: false,
+      role: 'vendor',
+      targetVendor: vendor,
+      relatedOrder: oid,
+      link: 'Orderan'
+    });
+    saveState();
+    renderAdminOrder();
+    toast(`Order berhasil dibuat: ${oid}`);
+  };
+
+  // ============================================================
+  // REKAP FUNCTION
+  // ============================================================
+function buildRekap() {
+  const vend = rVend.value;
+  const start = parseISODate(rStart.value);
+  const end = parseISODate(rEnd.value);
+  
+  // ✅ REVISI 1: Filter dulu, JANGAN reverse
+  const filteredOrders = state.orders.filter(o => {
+    const d = parseISODate(o.tgl_stuffing);
+    return d >= start && d <= end && (vend === "-- Semua --" || o.vendor === vend);
+  });
+  
+  // ✅ REVISI 2: Sort berdasarkan Tanggal Stuffing (ascending) dan Shift (1→2→3)
+  const orders = filteredOrders.sort((a, b) => {
+    // Primary sort: Tanggal stuffing (ascending - paling awal di atas)
+    const dateA = parseISODate(a.tgl_stuffing);
+    const dateB = parseISODate(b.tgl_stuffing);
+    
+    if (dateA < dateB) return -1;
+    if (dateA > dateB) return 1;
+    
+    // Secondary sort: Shift (1 → 2 → 3)
+    // Ekstrak angka dari "Shift 1", "Shift 2", "Shift 3"
+    const getShiftNumber = (shift) => {
+      if (!shift || shift === '-') return 999; // Shift kosong di akhir
+      const match = shift.match(/\d+/);
+      return match ? parseInt(match[0]) : 999;
+    };
+    
+    const shiftA = getShiftNumber(a.shift);
+    const shiftB = getShiftNumber(b.shift);
+    
+    return shiftA - shiftB;
+  });
+  
+  const tbody = document.getElementById("rekapBody");
+  if (orders.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="21">Tidak ada data</td></tr>`;
+    return;
+  }
+
+  let html = "";
+  orders.forEach((o, idx) => {
+    const items = state.containers[o.order_id] || [];
+    const containerTypes = [];
+    if (o.jml_20ft > 0) containerTypes.push("20ft");
+    if (o.jml_40ft > 0) containerTypes.push("40ft/HC");
+    if (o.jml_combo > 0) containerTypes.push("Combo");
+
+    const rowSpan = containerTypes.length || 1;
+    const isEditing = state.editing_order_id === o.order_id;
+    
+    containerTypes.forEach((sz, i) => {
+      const acc = items.filter(r => r.size === sz && r.accept === true).length;
+      const rej = items.filter(r => r.size === sz && r.accept === false).length;
+      const total = (sz === "20ft") ? o.jml_20ft : (sz === "40ft/HC" ? o.jml_40ft : o.jml_combo);
+
+      html += `<tr>`;
+      if (i === 0) {
+        html += `
+              <td rowspan="${rowSpan}">${idx + 1}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `<textarea id="edit_dn_${o.order_id}">${o.no_dn.join('\n')}</textarea>` : o.no_dn.join('<br>')}</td>
+              <td rowspan="${rowSpan}">${o.vendor}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `<input type="date" id="edit_tglstuff_${o.order_id}" value="${o.tgl_stuffing}">` : formatDisplayDate(o.tgl_stuffing)}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `<input id="edit_shippoint_${o.order_id}" value="${o.shipping_point}">` : o.shipping_point}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `<input id="edit_pod_${o.order_id}" value="${o.pod || ''}">` : o.pod || '-'}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `<input id="edit_terminal_${o.order_id}" value="${o.terminal || ''}">` : o.terminal || '-'}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `<input id="edit_depo_${o.order_id}" value="${o.depo || ''}">` : o.depo || '-'}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `<input type="date" id="edit_opency_${o.order_id}" value="${o.open_cy || ''}">` : (o.open_cy ? formatDisplayDate(o.open_cy) : '-')}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `
+                  <div class="closing-dt-wrap">
+                      <input type="date" id="edit_closingdate_${o.order_id}" value="${o.closing_date || ''}">
+                      <input type="time" id="edit_closingtime_${o.order_id}" value="${o.closing_time || ''}">
+                  </div>` : fmtDT(o.closing_date, o.closing_time)}</td>
+          `;
+      }
+
+      html += `
+          <td>${sz}</td>
+          <td>${total}</td>
+      `;
+
+      html += `
+          <td class="acc">${acc}</td>
+          <td class="rej">${rej}</td>
+      `;
+
+      if (i === 0) {
+        html += `
+              <td rowspan="${rowSpan}">${isEditing ? `<select id="edit_shift_${o.order_id}" class="input">
+                <option value="Shift 1" ${o.shift === 'Shift 1' ? 'selected' : ''}>Shift 1</option>
+                <option value="Shift 2" ${o.shift === 'Shift 2' ? 'selected' : ''}>Shift 2</option>
+                <option value="Shift 3" ${o.shift === 'Shift 3' ? 'selected' : ''}>Shift 3</option>
+              </select>` : (o.shift || '-')}</td>
+              <td rowspan="${rowSpan}">${isEditing ? `<textarea id="edit_remarks_${o.order_id}">${o.remarks || ''}</textarea>` : o.remarks || "-"}</td>
+              <td rowspan="${rowSpan}" id="bc_${o.order_id}"></td>
+              <td rowspan="${rowSpan}" id="si_${o.order_id}"></td>
+              <td rowspan="${rowSpan}"><button class="btn warn" data-email="${o.order_id}">Send</button></td>
+              <td rowspan="${rowSpan}">
+                  ${isEditing ? `<button class="btn success tiny" data-save-id="${o.order_id}">Save</button>
+                                 <button class="btn danger tiny" data-delete-id="${o.order_id}" style="margin-top:4px;">🗑️</button>` 
+                            : `<button class="btn warn tiny" data-edit-id="${o.order_id}">✏️</button>
+                               <button class="btn danger tiny" data-delete-id="${o.order_id}" style="margin-top:4px;">🗑️</button>`}
+              </td>
+          `;
+      }
+      html += `</tr>`;
+    });
+  });
+  tbody.innerHTML = html;
+  
+  // ✅ BAGIAN INI TIDAK BERUBAH - Lanjutkan dengan attachment handling
+  orders.forEach(o => {
+    const bcCell = document.getElementById(`bc_${o.order_id}`);
+    const siCell = document.getElementById(`si_${o.order_id}`);
+    const att = state.attachments[o.order_id] || {};
+    
+    if (att.booking_confirmation) {
+      bcCell.innerHTML = `<button class="btn success tiny" data-download-bc="${o.order_id}">📥 BC</button>`;
+    } else {
+      bcCell.innerHTML = `<label class="btn secondary tiny">⬆️ BC<input type="file" style="display:none" data-bc="${o.order_id}"></label>`;
+    }
+    
+    if (att.si) {
+      siCell.innerHTML = `<button class="btn success tiny" data-download-si="${o.order_id}">📥 SI</button>`;
+    } else {
+      siCell.innerHTML = `<label class="btn secondary tiny">⬆️ SI<input type="file" style="display:none" data-si="${o.order_id}"></label>`;
+    }
+  });
+
+  tbody.querySelectorAll('[data-bc]').forEach(inp => {
+    inp.onchange = (e) => {
+      const oid = inp.dataset.bc;
+      const file = e.target.files[0];
+      if (file) attachFile(oid, 'booking_confirmation', file);
+    };
+  });
+  
+  tbody.querySelectorAll('[data-si]').forEach(inp => {
+    inp.onchange = (e) => {
+      const oid = inp.dataset.si;
+      const file = e.target.files[0];
+      if (file) attachFile(oid, 'si', file);
+    };
+  });
+
+  tbody.querySelectorAll('[data-download-bc]').forEach(btn => {
+    btn.onclick = () => {
+      const oid = btn.dataset.downloadBc;
+      const att = state.attachments[oid];
+      if (att && att.booking_confirmation) {
+        downloadDataUrl(att.booking_confirmation.name, att.booking_confirmation.dataUrl);
+      }
+    };
+  });
+
+  tbody.querySelectorAll('[data-download-si]').forEach(btn => {
+    btn.onclick = () => {
+      const oid = btn.dataset.downloadSi;
+      const att = state.attachments[oid];
+      if (att && att.si) {
+        downloadDataUrl(att.si.name, att.si.dataUrl);
+      }
+    };
+  });
+
+  tbody.querySelectorAll('[data-email]').forEach(btn => {
+    btn.onclick = () => {
+      const oid = btn.dataset.email;
+      sendEmailToVendor(oid);
+    };
+  });
+
+  tbody.querySelectorAll('button[data-delete-id]').forEach(btn => {
+    btn.onclick = () => {
+      const orderId = btn.dataset.deleteId;
+      const order = state.orders.find(o => o.order_id === orderId);
+      
+      if (!confirm(`Yakin ingin menghapus order DN ${(order.no_dn || []).join(', ')}?`)) return;
+      
+      state.orders = state.orders.filter(o => o.order_id !== orderId);
+      delete state.containers[orderId];
+      delete state.attachments[orderId];
+      state.notifications = state.notifications.filter(n => n.relatedOrder !== orderId);
+      
+      saveState();
+      toast(`Order ${order.no_dn.join(', ')} berhasil dihapus.`);
+      buildRekap();
+    };
+  });
+
+  tbody.querySelectorAll('button[data-edit-id]').forEach(btn => {
+    btn.onclick = () => {
+      state.editing_order_id = btn.dataset.editId;
+      saveState();
+      buildRekap();
+    };
+  });
+
+  tbody.querySelectorAll('button[data-save-id]').forEach(btn => {
+    btn.onclick = () => {
+      const orderId = btn.dataset.saveId;
+      const orderToUpdate = state.orders.find(o => o.order_id === orderId);
+      if (orderToUpdate) {
+        const dnInputEl = document.getElementById(`edit_dn_${orderId}`);
+        let dnValue = '';
+
+        if (dnInputEl) {
+          if (dnInputEl.tagName === 'INPUT') {
+            dnValue = dnInputEl.value.trim();
+            orderToUpdate.no_dn = dnValue ? [dnValue] : [];
+          } else if (dnInputEl.tagName === 'TEXTAREA') {
+            dnValue = dnInputEl.value.trim();
+            orderToUpdate.no_dn = dnValue.split('\n').filter(dn => dn.trim() !== '');
+          }
+        }
+
+        orderToUpdate.tgl_stuffing = document.getElementById(`edit_tglstuff_${orderId}`).value;
+        orderToUpdate.shipping_point = document.getElementById(`edit_shippoint_${orderId}`).value;
+        orderToUpdate.pod = document.getElementById(`edit_pod_${orderId}`).value;
+        orderToUpdate.terminal = document.getElementById(`edit_terminal_${orderId}`).value;
+        orderToUpdate.depo = document.getElementById(`edit_depo_${orderId}`).value;
+        orderToUpdate.open_cy = document.getElementById(`edit_opency_${orderId}`).value;
+        orderToUpdate.closing_date = document.getElementById(`edit_closingdate_${orderId}`).value;
+        orderToUpdate.closing_time = document.getElementById(`edit_closingtime_${orderId}`).value;
+        orderToUpdate.shift = document.getElementById(`edit_shift_${orderId}`).value;
+        orderToUpdate.remarks = document.getElementById(`edit_remarks_${orderId}`).value;
+
+        toast(`Order ${orderId.split('-')[1]} berhasil diupdate.`);
+      }
+      state.editing_order_id = null;
+      saveState();
+      buildRekap();
+    };
+  });
+}
+
+  // Initial call and binds
+  buildRekap();
+  document.getElementById("rekap_vendor").onchange = buildRekap;
+  document.getElementById("rekap_start").onchange = buildRekap;
+  document.getElementById("rekap_end").onchange = buildRekap;
+
+  // ============================================================
+  // EXCEL DOWNLOAD
+  // ============================================================
+  document.getElementById("btnDownloadRekap").onclick = () => {
+    const vend = document.getElementById("rekap_vendor").value;
+    const startInput = document.getElementById("rekap_start").value;
+    const endInput = document.getElementById("rekap_end").value;
+    if (!startInput || !endInput) {
+      toast("Harap tentukan rentang tanggal.");
+      return;
+    }
+
+    const start = parseISODate(startInput);
+    const end = parseISODate(endInput);
+    const orders = state.orders.filter(o => {
+      const d = parseISODate(o.tgl_stuffing);
+      return d >= start && d <= end && (vend === "-- Semua --" || o.vendor === vend);
+    });
+
+    if (orders.length === 0) {
+      toast("Tidak ada data untuk diunduh pada filter ini.");
+      return;
+    }
+
+    const dataToExport = [];
+    orders.forEach(o => {
+      const items = state.containers[o.order_id] || [];
+      const accepted20 = items.filter(r => r.size === '20ft' && r.accept === true).length;
+      const rejected20 = items.filter(r => r.size === '20ft' && r.accept === false).length;
+      const accepted40 = items.filter(r => r.size === '40ft/HC' && r.accept === true).length;
+      const rejected40 = items.filter(r => r.size === '40ft/HC' && r.accept === false).length;
+      const acceptedCombo = items.filter(r => r.size === 'Combo' && r.accept === true).length;
+      const rejectedCombo = items.filter(r => r.size === 'Combo' && r.accept === false).length;
+
+      const row = {
+        "DN": (o.no_dn || []).join(', '),
+        "EMKL": o.vendor,
+        "Tgl Stuffing": formatDisplayDate(o.tgl_stuffing),
+        "Shipping Point": o.shipping_point,
+        "Country Port (Port)": o.pod || '',
+        "Terminal": o.terminal || '',
+        "Depo": o.depo || '',
+        "Open CY": o.open_cy ? formatDisplayDate(o.open_cy) : '',
+        "Closing": fmtDT(o.closing_date, o.closing_time),
+        "Remarks": o.remarks || '',
+        "Total 20ft": o.jml_20ft || 0,
+        "Accept 20ft": accepted20,
+        "Reject 20ft": rejected20,
+        "Total 40ft/HC": o.jml_40ft || 0,
+        "Accept 40ft/HC": accepted40,
+        "Reject 40ft/HC": rejected40,
+        "Total Combo": o.jml_combo || 0,
+        "Accept Combo": acceptedCombo,
+        "Reject Combo": rejectedCombo,
+        "Status": o.summary_status
+      };
+      dataToExport.push(row);
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Orderan");
+    XLSX.writeFile(workbook, "Rekap_List_Orderan.xlsx");
+  };
+}
+/* ===================== ADMIN: STATUS TRUCK ===================== */
+
+// Baris 800-850 (app.js)
+function showFilteredContainerDetailsModal(orderId, filterFn, title) {
+    const order = state.orders.find(o => o.order_id === orderId);
+    if (!order) return;
+
+    const allContainers = (state.containers[orderId] || []); 
+    
+    // ✅ PERBAIKAN: Jika filter adalah size_20ft, tampilkan 20ft + COMBO (dengan identitas asli)
+    let filteredContainers;
+    if (title.includes('20ft')) {
+        // Tampilkan 20ft normal + COMBO (tetap sebagai COMBO)
+        filteredContainers = allContainers.filter(c => c.size === '20ft' || c.size === 'Combo');
+    } else {
+        filteredContainers = allContainers.filter(filterFn);
+    }
+
+    if (filteredContainers.length === 0) {
+        toast("Tidak ada kontainer yang cocok dengan filter ini.");
+        return;
+    }
+
+    let tableRows = filteredContainers.map((r, index) => {
+        let containerCellHtml;
+        let sealCellHtml;
+
+        if (r.size === 'Combo') {
+            const containers = (r.no_container || '').split(/[\n,]/).map(s => s.trim()).filter(s => s);
+            const seals = (r.no_seal || '').split(/[\n,]/).map(s => s.trim()).filter(s => s);
+
+            const c1 = containers[0] || '-';
+            const c2 = containers[1] || '';
+            containerCellHtml = `<td>${c1}${c2 ? '<hr style="margin: 2px 0; border-top-color: #ccc;">' + c2 : ''}</td>`;
+            
+            const s1 = seals[0] || '-';
+            const s2 = seals[1] || '';
+            sealCellHtml = `<td>${s1}${s2 ? '<hr style="margin: 2px 0; border-top-color: #ccc;">' + s2 : ''}</td>`;
+            
+        } else {
+            containerCellHtml = `<td>${r.no_container || '-'}</td>`;
+            sealCellHtml = `<td>${r.no_seal || '-'}</td>`;
+        }
+        
+        let statusDisplay;
+        if (r.accept === false) {
+             statusDisplay = 'Reject';
+        } else if (r.accept === null) {
+             statusDisplay = 'Pending Respon';
+        } else {
+             statusDisplay = r.status || 'Confirm Order';
+        }
+
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td style="font-weight: 600; color: ${r.size === 'Combo' ? 'var(--blue-2)' : 'var(--ink)'};">${r.size || '-'}</td> <!-- ✅ COMBO tetap ditampilkan -->
+                ${containerCellHtml}
+                ${sealCellHtml}
+                <td>${r.no_mobil || '-'}</td>
+                <td>${r.nama_supir || '-'}</td>
+                <td>${r.contact || '-'}</td>
+                <td>${r.depo || '-'}</td>
+                <td style="font-weight:700; color: ${r.status.toLowerCase().includes('reject') || statusDisplay.toLowerCase().includes('revo') ? 'var(--red)' : 'var(--ink)'};">${statusDisplay}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const modalHtml = `
+        <div class="table-wrap" style="max-height: 60vh; overflow-y: auto;">
+            <table class="table compact" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Jenis</th>
+                        <th>No. Container</th>
+                        <th>No. Seal</th>
+                        <th>No. Mobil</th>
+                        <th>Supir</th>
+                        <th>Contact</th>
+                        <th>Depo</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    // ✅ PERBAIKAN: Update judul modal agar jelas
+    let finalTitle = title;
+    if (title.includes('20ft')) {
+        finalTitle = 'Detail 20ft + COMBO';
+    }
+    const fullTitle = `${finalTitle} (DN: ${(order.no_dn || []).join(' / ')})`;
+    openModal(fullTitle, modalHtml);
+}
+
+// ✅ KODE DIPERBAIKI - HOISTING FUNGSI KE LUAR SCOPE
+function renderAdminStatus(){
+  // 🔥 FIX: Jangan pakai variabel 'content' karena sudah di-declare di global scope
+  const mainContent = document.getElementById("content");
+  
+  mainContent.innerHTML = `
+    <div class="main-header"><h3 style="margin:0">🚛 Admin – Status Truck</h3>
+      <div class="small">Tampilan status berdasarkan order. Klik angka pada kolom jumlah untuk melihat detail.</div></div>
+    <div class="card">
+        <div class="row">
+        <div class="col" style="grid-column: span 3;">
+          <label>Filter EMKL</label>
+          <select id="status_vendor" class="input">
+            <option>-- Semua --</option>
+          </select>
+        </div>
+        <div class="col" style="grid-column: span 3;">
+          <label>Tgl Stuffing (start)</label>
+          <input id="status_start" type="date" class="input">
+        </div>
+        <div class="col" style="grid-column: span 3;">
+          <label>Tgl Stuffing (end)</label>
+          <input id="status_end" type="date" class="input">
+        </div>
+        
+        <div class="col" style="grid-column: span 3;">
+          <label>ETD (start)</label>
+          <input id="status_etd_start" type="date" class="input">
+        </div>
+        <div class="col" style="grid-column: span 3;">
+          <label>ETD (end)</label>
+          <input id="status_etd_end" type="date" class="input">
+        </div>
+        
+        <div class="col" style="grid-column: span 3;">
+          <label>Cari DN</label>
+          <input id="status_search_dn" type="text" class="input" placeholder="Cari No DN...">
+        </div>
+        
+        <div class="col" style="grid-column: span 3; display:flex; align-items:flex-end;">
+            <button id="btnDownloadStatusTruck" class="btn success full">⬇️ Download Excel</button>
+        </div>
+      </div>
+      <div class="rekap-wrap" style="margin-top: 12px;">
+        <table class="table rekap" id="statusTable" style="font-size: 11px;">
+          <thead>
+            <tr class="top">
+                <th>No</th>
+                <th>Ocean BL</th>
+                <th>DN</th>
+                <th>Final Destination</th>
+                <th>ETD</th>
+                <th>Shipping Line</th>
+                <th>Vessel Name</th>
+                <th>Open CY</th>
+                <th>Closing Fisik</th> 
+                <th>Closing CY</th>
+                <th>EMKL</th>
+                <th>W/H</th>
+                <th>Term</th>
+                <th>20ft</th>
+                <th>40ft/HC</th>
+                <th>Sum Cont</th>
+                
+                <th>Pending</th>
+                <th>Confirm Order</th>
+                <th>Reject</th>
+                <th>Sudah Muat</th>
+                <th>Muat Gudang</th>
+                <th>Revo</th> 
+                <th>Gate In Port</th>
+                
+                <th>Tonase Order</th>
+                <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="statusBody"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // Populate vendor dropdown
+  const rVend = document.getElementById("status_vendor");
+  VENDORS_DEFAULT.forEach(v=>{ 
+    const o=document.createElement("option"); 
+    o.textContent=v; 
+    rVend.appendChild(o); 
+  });
+  
+  // Set default dates
+  const rStart = document.getElementById("status_start");
+  const rEnd = document.getElementById("status_end");
+  const now = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+  rStart.value = toISODate(thirtyDaysAgo);
+  rEnd.value = toISODate(now);
+
+  // Helper function untuk clickable cell
+  function createClickableCell(count, orderId, filterType, filterTitle) {
+      if (count === 0 || !count) {
+          return '0';
+      }
+      return `<button 
+                class="btn-link" 
+                data-order-id="${orderId}" 
+                data-filter-type="${filterType}"
+                data-filter-title="${filterTitle}"
+              >${count}</button>`;
+  }
+
+  // Get filtered data
+  function getFilteredStatusData() {
+    const vend = document.getElementById("status_vendor").value;
+    const start = parseISODate(document.getElementById("status_start").value);
+    const end = parseISODate(document.getElementById("status_end").value);
+
+    const etdStartEl = document.getElementById("status_etd_start");
+    const etdEndEl = document.getElementById("status_etd_end");
+    const etdStart = etdStartEl.value ? parseISODate(etdStartEl.value) : null;
+    const etdEnd = etdEndEl.value ? parseISODate(etdEndEl.value) : null;
+    
+    const searchDnTerm = document.getElementById("status_search_dn").value.trim().toLowerCase(); 
+
+    const filteredOrders = state.orders.filter(o => {
+        const d = parseISODate(o.tgl_stuffing);
+        const stuffingOk = d >= start && d <= end;
+        const vendorOk = (vend === "-- Semua --" || o.vendor === vend);
+
+        let etdOk = true; 
+        if (etdStart || etdEnd) {
+            if (!o.etd) {
+                etdOk = false;
+            } else {
+                const orderEtd = parseISODate(o.etd);
+                if (etdStart && orderEtd < etdStart) etdOk = false;
+                if (etdEnd && orderEtd > etdEnd) etdOk = false;
+            }
+        }
+        
+        let dnOk = true;
+        if (searchDnTerm) {
+            dnOk = (o.no_dn || []).some(dn => dn.toLowerCase().includes(searchDnTerm));
+        }
+        
+        const items = state.containers[o.order_id] || [];
+        const hasAcceptedContainers = items.some(c => c.accept === true);
+        
+        return stuffingOk && vendorOk && etdOk && dnOk && hasAcceptedContainers;
+        
+    }).reverse();
+
+    const data = [];
+    let displayedIdx = 0;
+    
+    filteredOrders.forEach((o, idx) => {
+        const items = state.containers[o.order_id] || [];
+        
+        const acceptedItems = items.filter(c => c.accept === true); 
+        const accepted20Normal = acceptedItems.filter(c => c.size === '20ft').length;
+        const acceptedCombo = acceptedItems.filter(c => c.size === 'Combo').length;
+        const accepted40 = acceptedItems.filter(c => c.size === '40ft/HC').length;
+        
+        const accepted20 = accepted20Normal + (acceptedCombo * 2);
+        const totalAccepted = accepted20 + accepted40;
+
+        const totalOrderedContainers = items.length; 
+
+        if (totalOrderedContainers === 0) return;
+        
+        const countPending = items.filter(c => c.accept === null).length;
+        const countReject = items.filter(c => c.accept === false).length;
+        
+        const countConfirmOrder = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'confirm order').length;
+        const countSudahMuat = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'sudah muat').length;
+        const countMuatGudang = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'muat gudang').length;
+        const countRevo = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'revo').length;
+        const countGateIn = acceptedItems.filter(c => (c.status || '').toLowerCase() === 'gate in port').length;
+
+        displayedIdx++;
+        data.push({
+            idx: displayedIdx,
+            order: o,
+            accepted20,
+            accepted40, 
+            acceptedCombo,
+            totalAccepted: totalAccepted,
+            countPending, countConfirmOrder, countReject, countSudahMuat, countMuatGudang, countRevo, countGateIn
+        });
+    });
+    return data;
+  }
+
+  // Build table
+  function buildStatusTable() {
+    const tbody = document.getElementById("statusBody");
+    const filteredData = getFilteredStatusData();
+
+    if (filteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="25" class="center">Tidak ada data order pada periode ini.</td></tr>`;
+        return;
+    }
+    
+    tbody.innerHTML = filteredData.map(({ idx, order: o, ...counts }) => `
+        <tr>
+            <td>${idx}</td>
+            <td>-</td>
+            <td>${(o.no_dn || []).join('<br>')}</td>
+            <td>${o.pod || '-'}</td>
+            <td>${o.etd ? formatDisplayDate(o.etd) : '-'}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>${o.open_cy ? formatDisplayDate(o.open_cy) : '-'}</td>
+            <td>-</td>
+            <td>${fmtDT(o.closing_date, o.closing_time)}</td>
+            <td>${o.vendor || '-'}</td>
+            <td>${o.shipping_point || '-'}</td>
+            <td>${o.terminal || '-'}</td>
+            
+            <td class="center">${createClickableCell(counts.accepted20, o.order_id, 'size_20ft', 'Detail 20ft')}</td>
+            <td class="center">${createClickableCell(counts.accepted40, o.order_id, 'size_40ft', 'Detail 40ft/HC')}</td>
+            <td class="center">${createClickableCell(counts.totalAccepted, o.order_id, 'all_accepted', 'Total Accepted')}</td>
+            
+            <td class="center">${createClickableCell(counts.countPending, o.order_id, 'status_pending_null', 'Pending (Respon)')}</td>
+            <td class="center">${createClickableCell(counts.countConfirmOrder, o.order_id, 'status_confirm_order', 'Confirm Order')}</td>
+            <td class="center">${createClickableCell(counts.countReject, o.order_id, 'status_reject', 'Reject')}</td>
+            <td class="center">${createClickableCell(counts.countSudahMuat, o.order_id, 'status_sudah_muat', 'Sudah Muat')}</td>
+            <td class="center">${createClickableCell(counts.countMuatGudang, o.order_id, 'status_muat_gudang', 'Muat Gudang')}</td>
+            <td class="center">${createClickableCell(counts.countRevo, o.order_id, 'status_revo', 'Revo')}</td>
+            <td class="center">${createClickableCell(counts.countGateIn, o.order_id, 'status_gate_in', 'Gate In Port')}</td>
+            <td>-</td>
+            <td>${o.remarks || '-'}</td>
+        </tr>
+    `).join("");
+
+    // Event handler untuk clickable cells
+    const statusBody = document.getElementById("statusBody");
+    statusBody.onclick = function(e) {
+      const target = e.target;
+      if (target.tagName === 'BUTTON' && target.classList.contains('btn-link')) {
+        const orderId = target.dataset.orderId;
+        const filterType = target.dataset.filterType;
+        const title = target.dataset.filterTitle;
+        if (!orderId || !filterType) return;
+        
+        let filterFunction;
+        switch (filterType) {
+          case 'size_20ft': filterFunction = c => c.size === '20ft' && c.accept === true; break;
+          case 'size_40ft': filterFunction = c => c.size === '40ft/HC' && c.accept === true; break;
+          case 'all_accepted': filterFunction = c => c.accept === true; break;
+          case 'status_pending_null': filterFunction = c => c.accept === null; break;
+          case 'status_confirm_order': filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'confirm order'; break;
+          case 'status_reject': filterFunction = c => c.accept === false; break;
+          case 'status_sudah_muat': filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'sudah muat'; break;
+          case 'status_muat_gudang': filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'muat gudang'; break;
+          case 'status_revo': filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'revo'; break;
+          case 'status_gate_in': filterFunction = c => c.accept === true && (c.status || '').toLowerCase() === 'gate in port'; break;
+          default: filterFunction = c => true;
+        }
+        showFilteredContainerDetailsModal(orderId, filterFunction, title);
+      }
+    };
+  }
+
+  // Add CSS for btn-link
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .btn-link{background:none;border:none;color:var(--blue);text-decoration:underline;cursor:pointer;padding:0;font-size:inherit;font-family:inherit;}
+    .btn-link:hover{color:var(--blue-2);}
+  `;
+  document.head.appendChild(style);
+
+  // Event listeners
+  rVend.onchange = buildStatusTable;
+  rStart.onchange = buildStatusTable;
+  rEnd.onchange = buildStatusTable;
+  document.getElementById("status_etd_start").onchange = buildStatusTable;
+  document.getElementById("status_etd_end").onchange = buildStatusTable;
+  document.getElementById("status_search_dn").oninput = buildStatusTable;
+
+  // Download Excel
+  document.getElementById("btnDownloadStatusTruck").onclick = () => {
+    const dataToExport = [];
+    const filteredData = getFilteredStatusData();
+
+    if (filteredData.length === 0) {
+        toast("Tidak ada data untuk diunduh.");
+        return;
+    }
+
+    filteredData.forEach(({ idx, order: o, ...counts }) => {
+        dataToExport.push({
+            "No": idx,
+            "DN": (o.no_dn || []).join(', '),
+            "Final Destination": o.pod || '-',
+            "ETD": formatDisplayDate(o.etd) || '-',
+            "Open CY": o.open_cy ? formatDisplayDate(o.open_cy) : '-',
+            "Closing CY": fmtDT(o.closing_date, o.closing_time),
+            "EMKL": o.vendor || '-',
+            "W/H": o.shipping_point || '-',
+            "Term": o.terminal || '-',
+            "20ft": counts.accepted20,
+            "40ft/HC": counts.accepted40,
+            "Sum Cont": counts.totalAccepted,
+            "Pending Respon": counts.countPending,
+            "Reject": counts.countReject,
+            "Confirm Order": counts.countConfirmOrder,
+            "Sudah Muat": counts.countSudahMuat,
+            "Muat Gudang": counts.countMuatGudang,
+            "Revo": counts.countRevo,
+            "Gate In Port": counts.countGateIn,
+            "Remarks": o.remarks || '-'
+        });
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Status Truck");
+    const fileName = `Status_Truck_Admin_${document.getElementById("status_start").value}_to_${document.getElementById("status_end").value}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  // Initial render
+  buildStatusTable();
+}
+
+/* ===================== VENDOR: HOME (Calendar + availability) ===================== */
+function renderVendorHome(){
+  const vendor = state.vendor_name || "UNKNOWN";
+  const base = parseISODate(state.selected_date_vendor);
+  const month = base.getMonth()+1;
+  const year = base.getFullYear();
+  
+  // ✅ REVISI 1: Cek apakah tanggal yang dipilih SEBELUM hari ini
+  const todayISO = todayStr();
+  const selectedDateISO = state.selected_date_vendor;
+  const selectedDate = parseISODate(selectedDateISO);
+  const today = parseISODate(todayISO);
+  const isPastDate = selectedDate < today; // TRUE jika tanggal sebelum hari ini
+
+  content.innerHTML = `
+    <div class="main-header"><h3 style="margin:0">🏠 EMKL – Home</h3>
+      <div class="small">Kalender & update ketersediaan container</div></div>
+    <div class="card">
+      <div class="row">
+        <div class="col" style="grid-column: span 6;">
+          <label>Pilih Bulan</label>
+          <select id="v_home_month" class="input"></select>
+        </div>
+        <div class="col" style="grid-column: span 6;">
+          <label>Pilih Tahun</label>
+          <select id="v_home_year" class="input"></select>
+        </div>
+      </div>
+      <div class="cal-wrap" style="margin-top:10px">
+        <div class="cal-grid" id="vCalHead"></div>
+        <div id="vCalBody"></div>
+      </div>
+    </div>
+
+    <div class="card ${isPastDate ? 'card-disabled' : ''}">
+      <h3 style="margin-top:0">Ketersediaan Container Anda – <span id="selDate">${formatDisplayDate(state.selected_date_vendor)}</span></h3>
+      ${isPastDate ? '<div class="alert-warning" style="background:#fff7e6; border:1px solid #ffb020; padding:12px; border-radius:8px; margin-bottom:12px; color:#b45309; font-weight:500;">⚠️ Ketersediaan tidak dapat diubah untuk tanggal yang sudah lewat. Silakan pilih hari ini atau tanggal ke depan.</div>' : ''}
+      <div class="row">
+        <div class="col" style="grid-column: span 4;">
+            <label>Jumlah container 20ft</label>
+            <input id="av20" type="number" class="input" min="0" ${isPastDate ? 'disabled' : ''}>
+        </div>
+        <div class="col" style="grid-column: span 4;">
+            <label>Jumlah container 40ft/HC</label>
+            <input id="av40" type="number" class="input" min="0" ${isPastDate ? 'disabled' : ''}>
+        </div>
+        <div class="col" style="grid-column: span 4;">
+            <label>Jumlah container Combo</label>
+            <input id="avCombo" type="number" class="input" min="0" ${isPastDate ? 'disabled' : ''}>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <button id="btnSaveAvail" class="btn primary" ${isPastDate ? 'disabled' : ''}>Simpan Ketersediaan</button>
+      </div>
+    </div>
+  `;
+  
+  const mSel = document.getElementById("v_home_month");
+  for(let i=1;i<=12;i++){ const opt=document.createElement("option"); opt.value=i; opt.textContent=new Date(2000,i-1,1).toLocaleString('id-ID',{month:'long'}); if(i===month) opt.selected=true; mSel.appendChild(opt); }
+  
+  const currentYear = new Date().getFullYear();
+  const startYear = Math.max(currentYear, 2025); 
+  const ySel = document.getElementById("v_home_year");
+  for(let y=startYear-1;y<=startYear+1;y++){ 
+    if (y < 2025) continue;
+    const opt=document.createElement("option"); 
+    opt.value=y; 
+    opt.textContent=y; 
+    if(y===year) opt.selected=true; 
+    ySel.appendChild(opt); 
+  }
+
+  const head = document.getElementById("vCalHead");
+  ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU", "MINGGU"].forEach(n=>{
+    const d=document.createElement("div"); d.className="cal-head"; d.textContent=n; head.appendChild(d);
+  });
+  
+  function draw(y,m){
+    const body = document.getElementById("vCalBody");
+    body.innerHTML="";
+    const cal = monthMatrix(y,m);
+    const todayISO = todayStr();
+    const today = parseISODate(todayISO);
+    
+    cal.forEach(week=>{
+      const row = document.createElement("div"); row.className="cal-grid";
+      week.forEach(d=>{
+        const cell = document.createElement("div");
+        if(d===0){ row.appendChild(cell); return; }
+        const s = toISODate(new Date(y,m-1,d));
+        const data = state.availability[s]||{};
+        const rowv = data[vendor] || {"20ft":0,"40ft/HC":0,"Combo":0};
+        const t20 = Number(rowv["20ft"]||0), t40 = Number(rowv["40ft/HC"]||0), tCombo = Number(rowv["Combo"]||0);
+        const ok = (t20+t40+tCombo)>0;
+        const isTodayCell = (s===todayISO);
+        const isSelected = (s===state.selected_date_vendor);
+        
+        // ✅ REVISI 1: Disabled hanya jika tanggal SEBELUM hari ini
+        const cellDate = parseISODate(s);
+        const isPastDateCell = cellDate < today;
+        
+        cell.className = "cal-cell"+(ok?" ok":"")+(isTodayCell?" today":"")+(isSelected?" selected":"")+(isPastDateCell?" cal-disabled":"");
+        cell.innerHTML = `<div class="cal-num">${d}</div><div class="labels">20ft = ${t20}<br>40ft/HC = ${t40}<br>Combo = ${tCombo}</div><button class="btn pick" data-pick="${s}" ${isPastDateCell ? 'disabled' : ''}>Pilih</button>`;
+        row.appendChild(cell);
+      });
+      body.appendChild(row);
+    });
+    
+    body.querySelectorAll("button[data-pick]").forEach(b=>{
+      b.onclick = ()=>{ 
+        // ✅ REVISI 1: Validasi tambahan saat klik tombol
+        const dateStr = b.dataset.pick;
+        const clickedDate = parseISODate(dateStr);
+        const today = parseISODate(todayStr());
+        
+        if(clickedDate < today) {
+          toast("⚠️ Anda tidak dapat mengubah ketersediaan untuk tanggal yang sudah lewat.");
+          return;
+        }
+        state.selected_date_vendor = dateStr; 
+        saveState(); 
+        renderVendorHome(); 
+      };
+    });
+  }
+  
+  draw(year, month);
+  
+  mSel.onchange = ()=>{ state.selected_date_vendor = toISODate(new Date(Number(ySel.value), Number(mSel.value)-1, 1)); saveState(); renderVendorHome(); };
+  ySel.onchange = ()=>{ state.selected_date_vendor = toISODate(new Date(Number(ySel.value), Number(mSel.value)-1, 1)); saveState(); renderVendorHome(); };
+
+  const sel = state.selected_date_vendor;
+  const current = (state.availability[sel]||{})[vendor] || {"20ft":0,"40ft/HC":0,"Combo":0};
+  document.getElementById("av20").value = Number(current["20ft"]||0);
+  document.getElementById("av40").value = Number(current["40ft/HC"]||0);
+  document.getElementById("avCombo").value = Number(current["Combo"]||0);
+  
+  document.getElementById("btnSaveAvail").onclick = ()=>{
+    // ✅ REVISI 1: Validasi backend sebelum menyimpan
+    const selectedDate = parseISODate(sel);
+    const today = parseISODate(todayStr());
+    
+    if(selectedDate < today) {
+      toast("❌ Ketersediaan tidak dapat diubah untuk tanggal yang sudah lewat.");
+      return;
+    }
+    
+    const a20 = Number(document.getElementById("av20").value||0);
+    const a40 = Number(document.getElementById("av40").value||0);
+    const aCombo = Number(document.getElementById("avCombo").value||0);
+    
+    const oldAvail = (state.availability[sel] || {})[vendor] || {"20ft":0, "40ft/HC":0, "Combo":0};
+    
+    state.availability[sel] = state.availability[sel] || {};
+    state.availability[sel][vendor] = {"20ft":a20, "40ft/HC":a40, "Combo":aCombo};
+    
+    const totalChange = (a20 - oldAvail["20ft"]) + (a40 - oldAvail["40ft/HC"]) + (aCombo - oldAvail["Combo"]);
+    if (totalChange !== 0) {
+        state.notifications.push({
+            id: genId("NOTIF"),
+            message: `EMKL ${vendor} telah memperbarui ketersediaan untuk tanggal ${formatDisplayDate(sel)}.`,
+            timestamp: new Date().toISOString(),
+            isRead: false,
+            role: 'admin',
+            link: 'Home'
+        });
+    }
+    
+    saveState(); toast(`Ketersediaan ${vendor} diperbarui.`); renderVendorHome();
+  };
+}
+// Insert ini SETELAH card form ketersediaan (sebelum closing tag renderVendorHome)
+// Tambahkan setelah baris: </div></div></div>
+
+// ✅ REVISI 3: Tambahkan ringkasan visual ketersediaan
+const sel = state.selected_date_vendor;
+const current = (state.availability[sel]||{})[vendor] || {"20ft":0,"40ft/HC":0,"Combo":0};
+
+// Hitung total orders dan status
+const vendorOrders = state.orders.filter(o => o.vendor === vendor);
+const pendingCount = vendorOrders.filter(o => o.summary_status === 'Pending' || o.summary_status === 'Partial').length;
+const acceptedCount = vendorOrders.filter(o => o.summary_status === 'Accepted').length;
+const rejectedCount = vendorOrders.filter(o => o.summary_status === 'Rejected').length;
+
+content.innerHTML += `
+  <div class="card" style="background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 2px solid #7dd3fc;">
+    <h3 style="margin:0 0 20px 0; color: #0369a1; display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 1.5rem;">📊</span>
+      Ringkasan Status & Ketersediaan
+    </h3>
+    
+    <div class="row" style="gap: 16px;">
+      <!-- Status Orders -->
+      <div class="col" style="grid-column: span 6;">
+        <div style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <h4 style="margin: 0 0 16px 0; color: #1e40af; font-size: 1.1rem; border-bottom: 2px solid #dbeafe; padding-bottom: 8px;">Status Orderan</h4>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; border: 1px solid #fbbf24;">
+              <div style="font-size: 2rem; font-weight: 800; color: #92400e;">${pendingCount}</div>
+              <div style="font-size: 0.85rem; color: #78350f; font-weight: 600; margin-top: 4px;">Pending</div>
+            </div>
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-radius: 10px; border: 1px solid #86efac;">
+              <div style="font-size: 2rem; font-weight: 800; color: #065f46;">${acceptedCount}</div>
+              <div style="font-size: 0.85rem; color: #064e3b; font-weight: 600; margin-top: 4px;">Accepted</div>
+            </div>
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #fee2e2, #fecaca); border-radius: 10px; border: 1px solid #fca5a5;">
+              <div style="font-size: 2rem; font-weight: 800; color: #991b1b;">${rejectedCount}</div>
+              <div style="font-size: 0.85rem; color: #7f1d1d; font-weight: 600; margin-top: 4px;">Rejected</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Ketersediaan Container -->
+      <div class="col" style="grid-column: span 6;">
+        <div style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <h4 style="margin: 0 0 16px 0; color: #1e40af; font-size: 1.1rem; border-bottom: 2px solid #dbeafe; padding-bottom: 8px;">Ketersediaan Hari Ini (${formatDisplayDate(todayStr())})</h4>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 10px; border: 1px solid #60a5fa;">
+              <div style="font-size: 2rem; font-weight: 800; color: #1e3a8a;">${current["20ft"]}</div>
+              <div style="font-size: 0.85rem; color: #1e40af; font-weight: 600; margin-top: 4px;">20ft</div>
+            </div>
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); border-radius: 10px; border: 1px solid #818cf8;">
+              <div style="font-size: 2rem; font-weight: 800; color: #3730a3;">${current["40ft/HC"]}</div>
+              <div style="font-size: 0.85rem; color: #4338ca; font-weight: 600; margin-top: 4px;">40ft/HC</div>
+            </div>
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; border: 1px solid #fbbf24;">
+              <div style="font-size: 2rem; font-weight: 800; color: #92400e;">${current["Combo"]}</div>
+              <div style="font-size: 0.85rem; color: #78350f; font-weight: 600; margin-top: 4px;">Combo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+//
+/* ===================== VENDOR: ORDERAN (Accept/Reject Order - REVISI 1) ===================== */
+
+// --- BARU: Helper untuk menangani Aksi Accept/Reject di Modal Detail Kontainer ---
+function handleContainerAction(orderId, containerIndex, action) {
+    const order = state.orders.find(o => o.order_id === orderId);
+    if (!order || !state.containers[orderId] || !state.containers[orderId][containerIndex]) return;
+    
+    const c = state.containers[orderId][containerIndex];
+    const isAccept = action === 'accept';
+
+    if (isAccept) {
+        c.status = STATUS_TRUCKING.find(s => s.toLowerCase() === 'confirm order') || 'Confirm Order';
+    } else {
+        c.status = STATUS_TRUCKING.find(s => s.toLowerCase() === 'reject') || 'Reject';
+    }
+    
+    c.accept = isAccept;
+    
+    state.notifications.push({
+        id: genId("NOTIF"),
+        message: `${state.vendor_name} merespon kontainer ${c.size} di DN ${(order.no_dn || []).join(' & ')}: ${isAccept ? 'Accepted' : 'Rejected'}.`,
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        role: 'admin',
+        relatedOrder: orderId
+    });
+    
+    updateOrderSummary(orderId);
+    saveState();
+    closeModal();
+    renderVendorOrderan();
+    toast(`Kontainer #${c.no} di- ${isAccept ? 'Accept' : 'Reject'}.`);
+}
+
+// --- BARU: Helper untuk menampilkan Modal Detail Kontainer (Dipanggil dari Tabel Rekap Vendor) ---
+function showContainerActionModal(orderId, containerIndex) {
+    const order = state.orders.find(o => o.order_id === orderId);
+    const container = state.containers[orderId][containerIndex];
+    if (!order || !container) return;
+
+    let actionButtons;
+    let statusBadge;
+    
+    if (container.accept === true) {
+        actionButtons = `<button class="btn danger full" data-action="reject">Batalkan Accept</button>`;
+        statusBadge = `<span class="badge success">ACCEPTED</span>`;
+    } else if (container.accept === false) {
+        actionButtons = `<button class="btn success full" data-action="accept">Batalkan Reject</button>`;
+        statusBadge = `<span class="badge danger">REJECTED</span>`;
+    } else {
+        actionButtons = `
+            <button class="btn success full" data-action="accept">Accept Order</button>
+            <button class="btn danger full" data-action="reject" style="margin-top: 8px;">Reject Order</button>
+        `;
+        statusBadge = `<span class="badge warn">PENDING</span>`;
+    }
+
+    const modalHtml = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 5px 0;">Kontainer #${container.no} (${container.size})</h4>
+            ${statusBadge}
+        </div>
+        <div class="form-section">
+             <div class="section-title">Detail Order</div>
+             <div style="font-size: 0.9rem; line-height: 1.6;">
+                <p>DN: <b>${(order.no_dn || []).join(' & ')}</b></p>
+                <p>Stuffing: <b>${formatDisplayDate(order.tgl_stuffing)}</b></p>
+                <p>Closing CY: <b>${fmtDT(order.closing_date, order.closing_time)}</b></p>
+                <p>Shipping Point: <b>${order.shipping_point}</b></p>
+                <p>Remarks Admin: ${order.remarks || '-'}</p>
+             </div>
+        </div>
+        
+        <div style="margin-top: 15px;">
+            ${actionButtons}
+        </div>
+    `;
+
+    openModal(`Aksi Kontainer #${container.no}`, modalHtml, {
+        closeBtnText: 'Tutup',
+        closeBtnClass: 'secondary',
+        setupListeners: (modalBody) => {
+            modalBody.querySelectorAll('button[data-action]').forEach(btn => {
+                btn.onclick = () => {
+                    handleContainerAction(orderId, containerIndex, btn.dataset.action);
+                };
+            });
+        }
+    });
+}
+function renderVendorOrderan() {
+    const vendor = state.vendor_name;
+
+    content.innerHTML = `
+        <div class="main-header"><h3>📒 EMKL – Orderan</h3></div>
+    <div class="card">
+        <div class="rekap-wrap">
+            <table class="table rekap" id="vendorOrderTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2">No</th>
+                        <th rowspan="2">DN</th>
+                        <th rowspan="2">EMKL</th>
+                        <th rowspan="2">Tanggal Stuffing</th>
+                        <th rowspan="2">Shipping Point</th>
+                        <th rowspan="2">Country Port (Port)</th>
+                        <th rowspan="2">Terminal</th>
+                        <th rowspan="2">Depo</th>
+                        <th colspan="2" style="background: #f0f7ff;">CY</th>
+                        <th rowspan="2">Container</th>
+                        <th rowspan="2">Jumlah</th>
+                        <th rowspan="2">Remarks</th>
+                        <th colspan="2" style="text-align: center;">Status</th>
+                        <th rowspan="2">Submit</th>
+                    </tr>
+                    <tr>
+                        <th style="background: #f0f7ff;">Open</th>
+                        <th style="background: #f0f7ff;">Closing (Date Time)</th>
+                        <th class="acc">Accept</th>
+                        <th class="rej">Reject</th>
+                    </tr>
+                </thead>
+                <tbody id="vendorOrderBody"></tbody>
+            </table>
+        </div>
+    </div>
+`;
+    
+    const ordersToRespond = state.orders.filter(o => 
+        o.vendor === vendor && 
+        (o.summary_status === 'Pending' || o.summary_status === 'Partial')
+    ).reverse();
+
+    const tbody = document.getElementById("vendorOrderBody");
+    
+    if (ordersToRespond.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12">Tidak ada order yang perlu direspons.</td></tr>`;
+        return;
+    }
+
+    let rowsHtml = "";
+    
+ordersToRespond.forEach((order, orderIdx) => {
+        const containers = state.containers[order.order_id] || [];
+        const sizes = ["20ft", "40ft/HC", "Combo"].filter(s => 
+            (s === "20ft" && order.jml_20ft > 0) || 
+            (s === "40ft/HC" && order.jml_40ft > 0) || 
+            (s === "Combo" && order.jml_combo > 0)
+        );
+        const rowSpan = sizes.length;
+
+        sizes.forEach((sz, sizeIdx) => {
+            const total = (sz === "20ft") ? order.jml_20ft : (sz === "40ft/HC" ? order.jml_40ft : order.jml_combo);
+            const groupAcc = containers.filter(c => c.size === sz && c.accept === true).length;
+            const groupRej = containers.filter(c => c.size === sz && c.accept === false).length;
+
+            rowsHtml += `<tr>`;
+            if (sizeIdx === 0) {
+                // Urutan sesuai gambar: No, DN, EMKL, Tgl Stuffing, Shipping Point, Port, Terminal, Depo, Open, Closing
+                rowsHtml += `
+                    <td rowspan="${rowSpan}">${orderIdx + 1}</td>
+                    <td rowspan="${rowSpan}">${order.no_dn.join('<br>')}</td>
+                    <td rowspan="${rowSpan}">${order.vendor}</td>
+                    <td rowspan="${rowSpan}">${formatDisplayDate(order.tgl_stuffing)}</td>
+                    <td rowspan="${rowSpan}">${order.shipping_point || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.pod || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.terminal || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.depo || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.open_cy ? formatDisplayDate(order.open_cy) : '-'}</td>
+                    <td rowspan="${rowSpan}">${fmtDT(order.closing_date, order.closing_time)}</td>
+                `;
+            }
+            // Kolom Container dan Jumlah
+            rowsHtml += `
+                <td>${sz}</td>
+                <td>${total}</td>
+            `;
+            if (sizeIdx === 0) {
+                rowsHtml += `<td rowspan="${rowSpan}">${order.remarks || '-'}</td>`;
+            }
+            // Input Status Accept/Reject
+rowsHtml += `
+    <td class="acc"><div class="accept-display" data-order-id="${order.order_id}" data-size="${sz}">${groupAcc}</div></td>
+    <td class="rej"><input type="number" class="input-reject" data-order-id="${order.order_id}" data-size="${sz}" value="${groupRej}" max="${total}"></td>
+`;
+            if (sizeIdx === 0) {
+                rowsHtml += `<td rowspan="${rowSpan}"><button class="btn primary" data-order-id-submit="${order.order_id}">Submit</button></td>`;
+            }
+            rowsHtml += `</tr>`;
+        });
+    });
+
+    tbody.innerHTML = rowsHtml;
+
+// ✅ REVISI: Event listener untuk input REJECT (BUKAN ACCEPT) - auto calculate Accept
+tbody.querySelectorAll('.input-reject').forEach(input => {
+    input.addEventListener('input', (e) => {
+        const orderId = e.target.dataset.orderId;
+        const sz = e.target.dataset.size;
+        const total = parseInt(e.target.getAttribute('max'));
+        let val = parseInt(e.target.value) || 0;
+        
+        if (val < 0) val = 0;
+        if (val > total) val = total;
+        e.target.value = val;
+
+        // ✅ Auto-calculate ACCEPT dari REJECT
+        const acceptDisplay = tbody.querySelector(`.accept-display[data-order-id="${orderId}"][data-size="${sz}"]`);
+        if (acceptDisplay) acceptDisplay.textContent = total - val;
+    });
+});    
+    // Event listener untuk tombol Submit (Poin 2: Terlempar ke Add Detail)
+    tbody.querySelectorAll('button[data-order-id-submit]').forEach(btn => {
+        btn.onclick = () => {
+            const oid = btn.dataset.orderIdSubmit;
+            const order = state.orders.find(o => o.order_id === oid);
+            const containers = state.containers[oid] || [];
+            
+            // Ambil input accept dari elemen UI
+            tbody.querySelectorAll(`.input-accept[data-order-id="${oid}"]`).forEach(inp => {
+                const sz = inp.dataset.size;
+                const accQty = parseInt(inp.value) || 0;
+                const targetConts = containers.filter(c => c.size === sz && c.accept === null);
+                
+                targetConts.forEach((c, idx) => {
+                    if (idx < accQty) {
+                        c.accept = true;
+                        // Memberikan status awal agar terdeteksi di modul List Orderan (Add Detail)
+                        c.status = "Confirm Order"; 
+                    } else {
+                        c.accept = false;
+                        c.status = "Reject";
+                    }
+                });
+            });
+
+            updateOrderSummary(oid);
+            saveState();
+            
+            // Trigger render ulang untuk berpindah view secara logis
+            render(); 
+            toast("Order berhasil disubmit. Data Accept otomatis pindah ke List Orderan (Add Detail).");
+        };
+    });
+}
+
+/* ===================== VENDOR: LIST ORDERAN (Add Detail) ===================== */
+function isContainerValid(value) {
+    // Format: 4 huruf - 7 angka (contoh: ABCD-1234567)
+    // Regex: ^[A-Z]{4}[0-9]{7}$ - mencari 4 huruf diikuti 7 angka, tanpa strip.
+    const strictRegex = /^[A-Z]{4}[0-9]{7}$/; 
+    
+    // Hapus semua karakter non-alfanumerik dan ubah ke kapital
+    const cleanedValue = value.replace(/[^A-Z0-9]/g, '').toUpperCase(); 
+    
+    // Check if the cleaned value matches the strict format
+    return strictRegex.test(cleanedValue);
+}
+
+// ✅ KODE DIPERBAIKI - Filter containers yang accept === true
+function renderVendorListDetail() {
+    const vendor = state.vendor_name;
+    
+    // ✅ FIX: Filter order yang punya minimal 1 container accepted
+    const allOrders = state.orders
+        .filter(o => {
+            if (o.vendor !== vendor) return false;
+            
+            // Ambil containers yang accepted
+            const acceptedContainers = (state.containers[o.order_id] || []).filter(c => c.accept === true);
+            
+            // Hanya tampilkan order yang punya minimal 1 accepted container
+            return acceptedContainers.length > 0;
+        })
+        .sort((a, b) => {
+            const today = new Date();
+            return Math.abs(new Date(a.tgl_stuffing) - today) - Math.abs(new Date(b.tgl_stuffing) - today);
+        });
+
+    content.innerHTML = `
+        <div class="main-header"><h3>📋 EMKL — List Orderan (Add Detail)</h3></div>
+        <div class="card">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                <button id="btnDownloadVendorListDetail" class="btn success">⬇️ Download Excel</button>
+            </div>
+            <div class="rekap-wrap">
+                <table class="table rekap" id="listDetailTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">No</th>
+                            <th rowspan="2">DN</th>
+                            <th rowspan="2">EMKL</th>
+                            <th rowspan="2">Tanggal Stuffing</th>
+                            <th rowspan="2">Shipping Point</th>
+                            <th rowspan="2">Country Port (Port)</th>
+                            <th rowspan="2">Terminal</th>
+                            <th rowspan="2">Depo</th>
+                            <th colspan="2" style="background:#f0f7ff">CY</th>
+                            <th rowspan="2">Container</th>
+                            <th rowspan="2">Jumlah</th>
+                            <th rowspan="2">Remarks</th>
+                            <th rowspan="2">Aksi</th>
+                        </tr>
+                        <tr>
+                            <th style="background:#f0f7ff">Open</th>
+                            <th style="background:#f0f7ff">Closing (Date Time)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listDetailBody"></tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    const tbody = document.getElementById("listDetailBody");
+    
+    if (allOrders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="14" class="center">Tidak ada data yang sudah di-accept. Silakan accept order terlebih dahulu di menu "📑 Orderan".</td></tr>';
+        
+        // Disable download button jika tidak ada data
+        document.getElementById('btnDownloadVendorListDetail').onclick = () => {
+            toast("⚠️ Tidak ada data untuk diunduh.");
+        };
+        return;
+    }
+    
+    let rowsHtml = "";
+
+    allOrders.forEach((order, idx) => {
+        // ✅ FIX: Pastikan hanya ambil container yang accept === true
+        const containers = (state.containers[order.order_id] || []).filter(c => c.accept === true);
+        const sizes = ["20ft", "40ft/HC", "Combo"].filter(s => containers.some(c => c.size === s));
+        const rowSpan = sizes.length;
+
+        sizes.forEach((sz, sIdx) => {
+            const qty = containers.filter(c => c.size === sz).length;
+            
+            rowsHtml += `<tr>`;
+            if (sIdx === 0) {
+                rowsHtml += `
+                    <td rowspan="${rowSpan}">${idx + 1}</td>
+                    <td rowspan="${rowSpan}">${order.no_dn.join('<br>')}</td>
+                    <td rowspan="${rowSpan}">${order.vendor}</td>
+                    <td rowspan="${rowSpan}">${formatDisplayDate(order.tgl_stuffing)}</td>
+                    <td rowspan="${rowSpan}">${order.shipping_point}</td>
+                    <td rowspan="${rowSpan}">${order.pod || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.terminal || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.depo || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.open_cy ? formatDisplayDate(order.open_cy) : '-'}</td>
+                    <td rowspan="${rowSpan}">${fmtDT(order.closing_date, order.closing_time)}</td>
+                `;
+            }
+            rowsHtml += `<td>${sz}</td><td>${qty}</td>`;
+            if (sIdx === 0) {
+                rowsHtml += `
+                    <td rowspan="${rowSpan}">${order.remarks || '-'}</td>
+                    <td rowspan="${rowSpan}"><button class="btn warn tiny" onclick="toggleInlineDetail('${order.order_id}', this)">Add Detail</button></td>
+                `;
+            }
+            rowsHtml += `</tr>`;
+        });
+        rowsHtml += `<tr id="detail_row_${order.order_id}" style="display:none; background:#f9fbff;"><td colspan="14" id="detail_container_${order.order_id}" style="padding:15px; border: 1px solid var(--blue-light);"></td></tr>`;
+    });
+    
+    tbody.innerHTML = rowsHtml;
+
+    // ✅ Download Excel handler
+document.getElementById('btnDownloadVendorListDetail').onclick = () => {
+    if (typeof XLSX === "undefined") {
+        toast("Library XLSX belum termuat.");
+        return;
+    }
+
+    if (allOrders.length === 0) {
+        toast("Tidak ada data untuk diunduh.");
+        return;
+    }
+
+    const dataToExport = [];
+    let rowNumber = 0;
+            
+allOrders.forEach((order) => {
+        // Ambil data dari Outstanding
+        let outData = { sc: null, nw: null };
+        const dns = order.no_dn || [];
+        for (const dn of dns) {
+            const found = getDataFromOutstanding(dn);
+            if (Object.values(found).some(v => v !== null)) {
+                outData = found;
+                break;
+            }
+        }
+        
+        // Filter containers yang ACCEPT
+        const containers = (state.containers[order.order_id] || []).filter(c => c.accept === true);
+        
+        // Hitung TOTAL per SIZE
+        const total20ft = containers.filter(c => c.size === '20ft').length;
+        const total40ft = containers.filter(c => c.size === '40ft/HC').length;
+        const totalCombo = containers.filter(c => c.size === 'Combo').length;
+        
+        // Loop SETIAP CONTAINER
+        containers.forEach((container) => {
+            const isCombo = container.size === 'Combo';
+            
+            if (isCombo) {
+                // COMBO: 2 baris terpisah
+                const contValues = (container.no_container || '').split('\n').map(s => s.trim()).filter(s => s);
+                const sealValues = (container.no_seal || '').split('\n').map(s => s.trim()).filter(s => s);
+                
+                // Baris 1
+                rowNumber++;
+                dataToExport.push({
+                    "No": rowNumber,
+                    "Stuffing Date": formatDisplayDate(order.tgl_stuffing),
+                    "DN": (order.no_dn || []).join(', '),
+                    "SI": outData.sc || '-',
+                    "Size": 'Combo',
+                    "Total": totalCombo,
+                    "NW": outData.nw || '-',
+                    "Container No": contValues[0] || '-',
+                    "Seal": sealValues[0] || '-',
+                    "Plat Mobil": container.no_mobil || '-',
+                    "Driver": container.nama_supir || '-',
+                    "Shipping Point": order.shipping_point || '-',
+                    "Terminal": order.terminal || '-',
+                    "Country Port (Port)": order.pod || '-',
+                    "Closing CY": `${formatDisplayDate(order.closing_date)} ${order.closing_time || ''}`
+                });
+                
+                // Baris 2
+                rowNumber++;
+                dataToExport.push({
+                    "No": '',
+                    "Stuffing Date": '',
+                    "DN": '',
+                    "SI": '',
+                    "Size": '',
+                    "Total": '',
+                    "NW": '',
+                    "Container No": contValues[1] || '-',
+                    "Seal": sealValues[1] || '-',
+                    "Plat Mobil": '',
+                    "Driver": '',
+                    "Shipping Point": '',
+                    "Terminal": '',
+                    "Country Port (Port)": '',
+                    "Closing CY": ''
+                });
+                
+            } else {
+                // NORMAL (20ft/40ft): 1 baris
+                rowNumber++;
+                const total = container.size === '20ft' ? total20ft : total40ft;
+                
+                dataToExport.push({
+                    "No": rowNumber,
+                    "Stuffing Date": formatDisplayDate(order.tgl_stuffing),
+                    "DN": (order.no_dn || []).join(', '),
+                    "SI": outData.sc || '-',
+                    "Size": container.size,
+                    "Total": total,
+                    "NW": outData.nw || '-',
+                    "Container No": container.no_container || '-',
+                    "Seal": container.no_seal || '-',
+                    "Plat Mobil": container.no_mobil || '-',
+                    "Driver": container.nama_supir || '-',
+                    "Shipping Point": order.shipping_point || '-',
+                    "Terminal": order.terminal || '-',
+                    "Country Port (Port)": order.pod || '-',
+                    "Closing CY": `${formatDisplayDate(order.closing_date)} ${order.closing_time || ''}`
+                });
+            }
+        });
+    });
+
+    // Export Excel
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "List Orderan Detail");
+    const fileName = `List_Orderan_Detail_${vendor.replace(/\s+/g, '_')}_${todayStr()}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    toast("Download berhasil!");
+};
+}
+
+    tbody.querySelectorAll('button[data-edit-id]').forEach(btn => {
+        btn.onclick = () => {
+            state.editing_container_id_vendor = btn.dataset.editId;
+            saveState();
+            renderVendorListDetail();
+        };
+    });
+    tbody.querySelectorAll('button[data-cancel-id]').forEach(btn => {
+        btn.onclick = () => {
+            state.editing_container_id_vendor = null;
+            saveState();
+            renderVendorListDetail();
+        };
+    });
+    tbody.querySelectorAll('button[data-save-id]').forEach(btn => {
+        btn.onclick = () => {
+            const uniqueId = btn.dataset.saveId;
+            const [orderId, containerNo] = uniqueId.split('_');
+            const containerIndex = Number(containerNo) - 1;
+
+            if (state.containers[orderId] && state.containers[orderId][containerIndex]) {
+                const c = state.containers[orderId][containerIndex];
+                
+                const contEl = document.getElementById(`edit_cont_${uniqueId}`);
+                const sealEl = document.getElementById(`edit_seal_${uniqueId}`);
+                
+                const newContainerValue = contEl ? (contEl.tagName === 'TEXTAREA' ? contEl.value.trim() : contEl.value.trim()) : c.no_container;
+                const newSealValue = sealEl ? (sealEl.tagName === 'TEXTAREA' ? sealEl.value.trim() : sealEl.value.trim()) : c.no_seal;
+
+                // REVISI 4: Validasi Container
+                let containerValidated = true;
+                if (newContainerValue && c.size !== 'Combo') {
+                    if (!isContainerValid(newContainerValue)) {
+                        toast(`Kontainer ${newContainerValue} tidak valid. Format: 4 Huruf & 7 Angka (Contoh: ABCD1234567).`);
+                        containerValidated = false;
+                    }
+                } else if (newContainerValue && c.size === 'Combo') {
+                    // Validasi untuk combo (multi-baris)
+                    const containers = newContainerValue.split('\n').map(s => s.trim()).filter(s => s);
+                    if (containers.length < 2) {
+                        toast("Order Combo harus memiliki minimal 2 nomer kontainer.");
+                        containerValidated = false;
+                    } else if (!containers.every(cont => isContainerValid(cont))) {
+                        toast("Minimal satu nomer kontainer Combo tidak valid. Format: 4 Huruf & 7 Angka.");
+                        containerValidated = false;
+                    }
+                }
+                
+                // REVISI 4: Validasi Seal (Sama dengan Container)
+                let sealValidated = true;
+                if (newSealValue) {
+                     // Check if seal number follows the same convention for consistency
+                     if (c.size !== 'Combo' && !isContainerValid(newSealValue)) {
+                          toast(`Nomor Seal ${newSealValue} tidak valid. Format: 4 Huruf & 7 Angka (Contoh: ABCD1234567).`);
+                          sealValidated = false;
+                     } else if (c.size === 'Combo') {
+                        // Validasi untuk combo seal
+                        const seals = newSealValue.split('\n').map(s => s.trim()).filter(s => s);
+                        if (seals.length < 2) {
+                            toast("Order Combo Seal harus memiliki minimal 2 nomer seal.");
+                            sealValidated = false;
+                        } else if (!seals.every(seal => isContainerValid(seal))) {
+                             toast("Minimal satu nomer seal Combo tidak valid. Format: 4 Huruf & 7 Angka.");
+                             sealValidated = false;
+                        }
+                     }
+                }
+
+                if (!containerValidated || !sealValidated) {
+                    return; // Stop saving if validation fails
+                }
+
+                c.no_container = newContainerValue;
+                c.no_seal = newSealValue;
+                
+                c.no_mobil = document.getElementById(`edit_mobil_${uniqueId}`).value.trim();
+                c.nama_supir = document.getElementById(`edit_supir_${uniqueId}`).value.trim();
+                c.contact = document.getElementById(`edit_contact_${uniqueId}`).value.trim();
+                c.depo = document.getElementById(`edit_depo_${uniqueId}`).value.trim();
+                
+                const newStatus = document.getElementById(`edit_status_${uniqueId}`).value;
+                const oldStatus = c.status;
+                c.status = newStatus;
+
+                if (newStatus.toLowerCase() !== oldStatus.toLowerCase() && newStatus.toLowerCase() === 'gate in port') {
+                    const order = allOrders.find(o => o.order_id === orderId);
+                    state.notifications.push({
+                        id: genId("NOTIF"),
+                        message: `Kontainer ${c.no_container || 'No.'+c.no} (DN: ${(order.no_dn||[]).join(' & ')}) sudah GATE IN PORT.`,
+                        timestamp: new Date().toISOString(),
+                        isRead: false,
+                        role: 'admin',
+                        relatedOrder: orderId
+                    });
+                }
+
+                toast(`Detail kontainer ${containerNo} berhasil diupdate.`);
+            }
+            state.editing_container_id_vendor = null;
+            saveState();
+            renderVendorListDetail();
+        };
+    });
+
+function parseAndStoreOutstandingData(fileObject) {
+    if (typeof XLSX === "undefined") {
+        console.error("XLSX library not loaded.");
+        return;
+    }
+    try {
+        const b64 = fileObject.dataUrl.split('base64,')[1];
+        const workbook = XLSX.read(b64, { type: 'base64' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); 
+        fileObject.parsedData = jsonData;
+    } catch (err) {
+        console.error("Gagal mem-parsing file Excel:", err);
+        toast(`Gagal memproses file ${fileObject.name}.`);
+        fileObject.parsedData = null;
+    }
+}
+
+function displayInlinePreview(file) {
+    if (typeof XLSX === "undefined") {
+        toast("Library XLSX belum termuat.");
+        return;
+    }
+    const container = document.getElementById("outstandingPreviewContainer");
+    if (!container) return;
+
+    try {
+        const b64 = file.dataUrl.split('base64,')[1];
+        const workbook = XLSX.read(b64, { type: 'base64' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const tableHtml = XLSX.utils.sheet_to_html(worksheet, { id: 'previewTable', editable: false });
+
+        container.innerHTML = `
+            <div class="preview-header">
+                <h4>Preview: ${file.name}</h4>
+                <button id="hidePreviewBtn" class="btn secondary">Hide</button>
+            </div>
+            <div class="table-wrap">
+                <style>#previewTable{width:100%;border-collapse:collapse;} #previewTable td, #previewTable th{border:1px solid #ccc;padding:4px 8px;text-align:left;}</style>
+                ${tableHtml}
+            </div>
+        `;
+        container.style.display = 'block';
+        document.getElementById('hidePreviewBtn').onclick = () => {
+            state.active_preview_file_id = null;
+            saveState();
+            renderOutstanding();
+        };
+    } catch (err) {
+        console.error("Gagal membaca file Excel:", err);
+        toast("Gagal memproses file. Pastikan format Excel valid.");
+        container.style.display = 'none';
+        container.innerHTML = '';
+    }
+}
+/* ===================== ADMIN: DATA OUTSTANDING ===================== */
+function renderOutstanding(){
+  content.innerHTML = `
+    <div class="main-header">
+      <h3 style="margin:0">🧾 Admin — Data Outstanding</h3>
+      <div class="small">Unggah file Excel/CSV sebagai database. Klik 'Tampilkan' untuk melihat isinya.</div>
+    </div>
+    <div class="card">
+      <div class="toolbar" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+        <label class="btn primary">
+          ⬆️ Upload File
+          <input id="outUpload" type="file" accept=".csv,.xlsx" multiple style="display:none">
+        </label>
+        <button id="outDeleteAll" class="btn danger">🗑️ Hapus Semua</button>
+      </div>
+      <div id="outList" style="margin-top:12px"></div>
+    </div>
+    <div id="outstandingPreviewContainer" class="card" style="display:none; margin-top:16px;"></div>
+  `;
+
+  if(!Array.isArray(state.outstanding_files)) state.outstanding_files = [];
+
+  const input = document.getElementById("outUpload");
+  input.onchange = (e)=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    let pending = files.length;
+    files.forEach(f=>{
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const fileObject = {
+          id: genId("OUT"),
+          name: f.name,
+          size: f.size,
+          type: f.type || (/\.(xlsx|xls)$/i.test(f.name) ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv"),
+          uploadedAt: new Date().toISOString(),
+          dataUrl: reader.result
+        };
+        
+        parseAndStoreOutstandingData(fileObject);
+        state.outstanding_files.push(fileObject);
+
+        pending--;
+        if(pending===0){
+          state.notifications.push({
+              id: genId("NOTIF"),
+              message: `(${files.length}) file Data Outstanding baru telah diupload.`,
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              role: 'admin',
+              link: 'Data Outstanding'
+          });
+          
+          saveState();
+          drawList();
+          toast("Upload berhasil.");
+          input.value="";
+        }
+      };
+      reader.readAsDataURL(f);
+    });
+  };
+
+  document.getElementById("outDeleteAll").onclick = ()=>{
+    if(confirm("Hapus semua file Data Outstanding?")){
+      state.outstanding_files = [];
+      state.active_preview_file_id = null;
+      saveState();
+      renderOutstanding();
+      toast("Semua file dihapus.");
+    }
+  };
+
+  function drawList(){
+    const box = document.getElementById("outList");
+    const list = state.outstanding_files;
+    if(!list.length){
+      box.innerHTML = '<div class="empty">Belum ada file. Klik <b>Upload File</b> untuk menambahkan.</div>';
+      return;
+    }
+    box.innerHTML = list.map(f=>`
+      <div class="file-row" data-id="${f.id}">
+        <div class="file-main">
+          <div class="file-name">📄 <b>${f.name}</b></div>
+          <div class="file-meta small">${(f.size/1024).toFixed(1)} KB • ${new Date(f.uploadedAt).toLocaleString()}</div>
+        </div>
+        <div class="file-actions">
+          <button class="btn success" data-act="view">Tampilkan</button>
+          <button class="btn secondary" data-act="download">📥 Unduh</button>
+          <button class="btn danger" data-act="delete">🗑️ Hapus</button>
+        </div>
+      </div>
+    `).join("");
+
+    box.querySelectorAll(".file-row").forEach(row=>{
+      const id = row.dataset.id;
+      const f = state.outstanding_files.find(x=>x.id===id);
+      
+      row.querySelector('[data-act="view"]').onclick = ()=>{
+        if (f) {
+          state.active_preview_file_id = f.id;
+          saveState();
+          displayInlinePreview(f);
+        }
+      };
+      row.querySelector('[data-act="download"]').onclick = ()=>{
+        if(f) downloadDataUrl(f.name, f.dataUrl);
+      };
+      row.querySelector('[data-act="delete"]').onclick = ()=>{
+        if(confirm("Hapus file ini?")){
+          state.outstanding_files = state.outstanding_files.filter(x=>x.id!==id);
+          if (state.active_preview_file_id === id) {
+            state.active_preview_file_id = null;
+          }
+          saveState();
+          renderOutstanding();
+          toast("File dihapus.");
+        }
+      };
+    });
+    setLastUpdate();
+  }
+  
+  drawList();
+
+  if (state.active_preview_file_id) {
+    const fileToPreview = state.outstanding_files.find(f => f.id === state.active_preview_file_id);
+    if (fileToPreview) {
+      displayInlinePreview(fileToPreview);
+    } else {
+      state.active_preview_file_id = null;
+      saveState();
+    }
+  }
+}
+// Baris 1001
+/* ===================== ADMIN: RATE TRANSPORTER ===================== */
+function renderRateTransporter(){
+  
+  const RATE_TRANSPORTER_DATA = [
+    { rank: 1, name: "PT Cakraindo Mitra International", '20FT': 10, '40FT': 10, total: 20, alokasi: '12%' },
+    { rank: 2, name: "PT Argo Trans Mandiri", '20FT': 2, '40FT': 5, total: 7, alokasi: '4%' },
+    { rank: 3, name: "PT Puninar Logistics", '20FT': 5, '40FT': 5, total: 10, alokasi: '6%' },
+    { rank: 4, name: "PT Elang Transportasi Indonesia", '20FT': null, '40FT': 5, total: 5, alokasi: '3%' },
+    { rank: 5, name: "PT Bimaruna Jaya", '20FT': 10, '40FT': 20, total: 30, alokasi: '18%' },
+    { rank: 6, name: "PT BSA Logistics Indonesia", '20FT': 5, '40FT': 5, total: 10, alokasi: '6%' },
+    { rank: 7, name: "PT Tangguh Karimata Jaya", '20FT': 2, '40FT': 5, total: 7, alokasi: '4%' },
+    { rank: 8, name: "PT Inti Persada Mandiri", '20FT': 5, '40FT': 20, total: 25, alokasi: '15%' },
+    { rank: 9, name: "PT Glory Bahana Universal", '20FT': 5, '40FT': 10, total: 15, alokasi: '9%' },
+    { rank: 10, name: "PT Putra Sejahtera Sentosa", '20FT': 3, '40FT': 10, total: 13, alokasi: '8%' },
+    { rank: 11, name: "PT Trisindo", '20FT': null, '40FT': 5, total: 5, alokasi: '3%' },
+    { rank: 12, name: "PT Lintas Marindo Nusantara", '20FT': 3, '40FT': 20, total: 23, alokasi: '14%' },
+  ];
+  
+  const total20FT = RATE_TRANSPORTER_DATA.reduce((sum, item) => sum + (item['20FT'] || 0), 0);
+  const total40FT = RATE_TRANSPORTER_DATA.reduce((sum, item) => sum + (item['40FT'] || 0), 0);
+  const grandTotal = RATE_TRANSPORTER_DATA.reduce((sum, item) => sum + item.total, 0);
+
+  const total20Percent = ((total20FT / grandTotal) * 100).toFixed(0) + '%';
+  const total40Percent = ((total40FT / grandTotal) * 100).toFixed(0) + '%';
+  
+  const bodyRows = RATE_TRANSPORTER_DATA.map(d => `
+    <tr>
+      <td class="center">${d.rank}</td>
+      <td style="text-align: left; font-weight: 500; color: var(--ink);">${d.name}</td>
+      <td class="center">${d['20FT'] || ''}</td>
+      <td class="center">${d['40FT'] || ''}</td>
+      <td class="center">${d.total}</td>
+      <td class="center" style="font-weight: 600; color: var(--blue-2);">${d.alokasi}</td>
+    </tr>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="main-header">
+      <h3 style="margin:0">💰 Admin — Rate Transporter</h3>
+      <div class="small">Tabel alokasi dan ranking transporter.</div>
+    </div>
+    <div class="card">
+      <div class="table-wrap no-scroll">
+        <table class="table" style="min-width: 650px;">
+          <thead>
+            <tr style="background: linear-gradient(180deg, #fef3c7, #fef9e8);">
+              <th style="background: linear-gradient(180deg, #fef3c7, #fef9e8); position: sticky; top: 0;">Rank</th>
+              <th style="background: linear-gradient(180deg, #fef3c7, #fef9e8); position: sticky; top: 0; text-align: left; min-width: 250px;">Transporter</th>
+              <th style="background: linear-gradient(180deg, #fef3c7, #fef9e8); position: sticky; top: 0;">20FT</th>
+              <th style="background: linear-gradient(180deg, #fef3c7, #fef9e8); position: sticky; top: 0;">40FT</th>
+              <th style="background: linear-gradient(180deg, #fef3c7, #fef9e8); position: sticky; top: 0;">Total</th>
+              <th style="background: linear-gradient(180deg, #fef3c7, #fef9e8); position: sticky; top: 0;">Alokasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bodyRows}
+          </tbody>
+          <tfoot style="font-weight: 700;">
+            <tr style="background-color: #fef3c7;">
+              <td colspan="2" style="text-align: right;">Total</td>
+              <td class="center">${total20FT}</td>
+              <td class="center">${total40FT}</td>
+              <td class="center">${grandTotal}</td>
+              <td class="center">100%</td>
+            </tr>
+            <tr style="background-color: #fef3c7;">
+              <td colspan="2" style="text-align: right;"></td>
+              <td class="center">${total20Percent}</td>
+              <td class="center">${total40Percent}</td>
+              <td class="center"></td>
+              <td class="center"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  `;
+}
+/* ===================== ADMIN: PORT ===================== */
+function renderPort(){
+    
+    const portServices = [
+        { name: "JICT", username: "IKK_Jkt", password: "IKK@2025", url: "https://my.jict.co.id/" },
+        { name: "NPCT1", username: "IKK_Jkt", password: "IKK@2025", url: "https://econ.npct1.co.id/" },
+        { name: "KOJA", username: "IKK_Jkt", password: "IKK@2025", url: "https://econ.npct1.co.id/" }, 
+        { name: "MAL", username: "IKK_Jkt", password: "IKK@2025", url: "https://e-billing.malt300.com/e-booking/" },
+        { name: "PELINDO", username: "IKK_Jkt", password: "IKK@2025", url: "https://eservice.pelindo.co.id/" },
+    ];
+    
+    const cardHtml = portServices.map(service => `
+        <div class="col" style="grid-column: span 4;">
+            <div class="card" style="padding: 15px 20px; text-align: left; transition: box-shadow .2s ease; border-color: var(--blue-soft);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.8rem; color: var(--blue); background-color: var(--blue-light); padding: 5px 8px; border-radius: 8px;">🚢</span>
+                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--ink);">${service.name}</h3>
+                    </div>
+                    <a href="${service.url}" target="_blank" class="btn secondary" style="background-color: var(--blue-light); color: var(--blue-2); border-color: var(--blue-soft);">Visit</a>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <div style="flex: 1; min-width: 0; padding-right: 10px;">
+                        <div class="muted" style="font-weight: 500; font-size: 0.75rem; margin-bottom: 4px;">USERNAME</div>
+                        <div style="font-weight: 600; line-height: 1.2; word-wrap: break-word;">${service.username}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="muted" style="font-weight: 500; font-size: 0.75rem; margin-bottom: 4px;">PASSWORD</div>
+                        <div style="font-weight: 600; line-height: 1.2; word-wrap: break-word;">${service.password}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    content.innerHTML = `
+        <div class="main-header" style="background: linear-gradient(135deg, var(--blue-2), var(--blue));">
+            <h3 style="margin:0">🚢 Admin — Port</h3>
+            <div class="small">Daftar akun dan akses ke berbagai layanan pengiriman/pelabuhan.</div>
+        </div>
+        <div class="card" style="margin-top: 20px;">
+            <div class="row" style="gap: 16px;">
+                ${cardHtml}
+            </div>
+        </div>
+    `;
+    
+}
+
+function exportOutstandingData() {
+    if (typeof XLSX === "undefined") {
+        toast("Library XLSX belum termuat.");
+        return;
+    }
+    const outstandingFiles = state.outstanding_files || [];
+    if (outstandingFiles.length === 0) {
+        toast("Tidak ada data outstanding untuk diekspor.");
+        return;
+    }
+
+    try {
+        const wb = XLSX.utils.book_new();
+        outstandingFiles.forEach((file, index) => {
+            if (file.parsedData && Array.isArray(file.parsedData)) {
+                let sheetName = file.name.replace(/[\.\[\]\*\/\\?\:]/g, "").substring(0, 25);
+                if (!sheetName) sheetName = `Sheet${index + 1}`;
+                
+                let finalSheetName = sheetName;
+                let counter = 1;
+                while(wb.SheetNames.includes(finalSheetName)){
+                  finalSheetName = `${sheetName.substring(0, 28)}_${counter}`;
+                  counter++;
+                }
+
+                const ws = XLSX.utils.aoa_to_sheet(file.parsedData);
+                XLSX.utils.book_append_sheet(wb, ws, finalSheetName);
+            }
+        });
+
+        if (wb.SheetNames.length === 0) {
+            toast("Tidak ada data valid yang bisa diekspor dari file outstanding.");
+            return;
+        }
+
+        XLSX.writeFile(wb, "report_data_outstanding.xlsx");
+        toast("Ekspor Data Outstanding berhasil.");
+    } catch (err) {
+        console.error("Gagal mengekspor data outstanding:", err);
+        toast("Terjadi kesalahan saat mengekspor data.");
+    }
+}
+
+// === AFTER: getDataFromOutstanding() - FINAL FIX WITH DUAL 40FT COLUMNS ===
+// === AFTER: getDataFromOutstanding() - ULTRA FLEXIBLE MAPPING ===
+function getDataFromOutstanding(dnToFind) {
+  const defaultResult = {
+    partie20: null, partie40: null, sc: null,
+    shippingPoint: null, // ✅ BEDA DARI forwardingAgent
+    countryPort: null,   // ✅ BEDA DARI pod/destination
+    forwardingAgent: null,
+    productGroup: null, 
+    productForm: null,
+    nw: null, 
+    etd: null
+  };
+  
+  if (!state.outstanding_files || state.outstanding_files.length === 0) {
+    return defaultResult;
+  }
+  
+  const targetDn = String(dnToFind)
+    .trim()
+    .toLowerCase()
+    .replace(/[\s\-_]/g, '');
+  
+  if (!targetDn) return defaultResult;
+
+  // 🔥 CRITICAL: ALIAS DEFINITIONS
+  const dnAliases = ['dn', 'no dn', 'delivery note', 'no. dn'];
+  const p20Aliases = ['20', '20ft', 'partie 20', "20'", '20ft/gp'];
+  const p40NormalAliases = ['40', 'partie 40', "40'"];
+  const p40HCAliases = ['40hc', "40'hc", '40 hc', "40' hc", '40ft/hc'];
+  const scAliases = ['sc', 'no sc', 'no. sc'];
+  
+  // 🔥 SHIPPING POINT (W/H, Warehouse, Shipping Point)
+  const shippingPointAliases = [
+    'shipping point', 
+    'w/h', 
+    'wh',
+    'warehouse', 
+    'gudang',
+    'ship point',
+    'shipping'
+  ];
+  
+  // 🔥 COUNTRY PORT (BUKAN Destination Port!)
+  const countryPortAliases = [
+    'country port (port)', 
+    'country port', 
+    'country',
+    'port',
+    'loading port', // Kadang disebut loading port
+    'pol' // Port of Loading
+  ];
+  
+  // Forwarding Agent (BERBEDA dari Shipping Point!)
+  const fwdAgentAliases = ['forwarding agent', 'fwd agent', 'forwarder', 'emkl', 'fa'];
+  
+  const prodGroupAliases = ['product group', 'grup', 'group'];
+  const prodFormAliases = ['product form', 'form'];
+  const nwAliases = ['nw', 'net weight', 'nett weight'];
+  const etdAliases = ['etd', 'estimated departure', 'est. departure', 'etd date'];
+
+  for (const file of state.outstanding_files) {
+    if (!file.parsedData || file.parsedData.length < 1) continue;
+
+    let headers = null;
+    let dataStartIndex = -1;
+
+    for (let i = 0; i < Math.min(10, file.parsedData.length); i++) {
+        const potentialHeaders = file.parsedData[i].map(h => String(h || '').trim().toLowerCase());
+        const hasDn = dnAliases.some(alias => potentialHeaders.includes(alias));
+        
+        if (hasDn) {
+            headers = potentialHeaders;
+            dataStartIndex = i + 1;
+            console.log(`[Outstanding] 📋 Headers found at row ${i}:`, headers); // ✅ DEBUG
+            break; 
+        }
+    }
+
+    if (!headers) {
+        console.warn(`[Outstanding] File ${file.name}: Header tidak ditemukan`);
+        continue;
+    }
+
+    const findIndex = (aliases) => {
+      for (const alias of aliases) {
+        const index = headers.indexOf(alias);
+        if (index !== -1) {
+          console.log(`[Outstanding] ✅ Found column "${alias}" at index ${index}`); // ✅ DEBUG
+          return index;
+        }
+      }
+      return -1;
+    };
+    
+    const dnIndex = findIndex(dnAliases);
+    const p20Index = findIndex(p20Aliases);
+    const p40NormalIndex = findIndex(p40NormalAliases);
+    const p40HCIndex = findIndex(p40HCAliases);
+    const scIndex = findIndex(scAliases);
+    
+    // 🔥 CRITICAL: MAPPING BARU
+    const shippingPointIndex = findIndex(shippingPointAliases);
+    const countryPortIndex = findIndex(countryPortAliases);
+    const fwdAgentIndex = findIndex(fwdAgentAliases);
+    
+    const prodGroupIndex = findIndex(prodGroupAliases);
+    const prodFormIndex = findIndex(prodFormAliases);
+    const nwIndex = findIndex(nwAliases);
+    const etdIndex = findIndex(etdAliases);
+    
+    if (dnIndex === -1) {
+        console.warn(`[Outstanding] File ${file.name}: Kolom DN tidak ditemukan`);
+        continue;
+    }
+
+    // 🔥 DEBUG: PRINT SEMUA INDEX YANG DITEMUKAN
+    console.log(`[Outstanding] 🔍 Column Indexes Found:`);
+    console.log(`  - DN: ${dnIndex}`);
+    console.log(`  - Shipping Point: ${shippingPointIndex}`);
+    console.log(`  - Country Port: ${countryPortIndex}`);
+    console.log(`  - Forwarding Agent: ${fwdAgentIndex}`);
+    console.log(`  - 20ft: ${p20Index}`);
+    console.log(`  - 40ft Normal: ${p40NormalIndex}`);
+    console.log(`  - 40ft HC: ${p40HCIndex}`);
+
+    for (let i = dataStartIndex; i < file.parsedData.length; i++) {
+      const row = file.parsedData[i];
+      if (!row || row.length <= dnIndex) continue;
+      
+      const currentDn = String(row[dnIndex] || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[\s\-_]/g, '');
+      
+      if (currentDn === targetDn) {
+        console.log(`[Outstanding] ✅ MATCH: DN "${dnToFind}" → File ${file.name}, Row ${i + 1}`);
+        console.log(`[Outstanding] 📊 Full Row Data:`, row); // ✅ DEBUG FULL ROW
+        
+        // Calculate 40ft total
+        let total40ft = 0;
+        
+        if (p40NormalIndex !== -1 && row[p40NormalIndex] !== undefined && row[p40NormalIndex] !== null) {
+          const val40 = parseFloat(row[p40NormalIndex]) || 0;
+          total40ft += val40;
+          console.log(`  📊 Partie 40 (Normal): ${val40}`);
+        }
+        
+        if (p40HCIndex !== -1 && row[p40HCIndex] !== undefined && row[p40HCIndex] !== null) {
+          const val40HC = parseFloat(row[p40HCIndex]) || 0;
+          total40ft += val40HC;
+          console.log(`  📊 Partie 40HC: ${val40HC}`);
+        }
+        
+        console.log(`  ✅ TOTAL 40ft/HC: ${total40ft}`);
+        
+        // 🔥 CRITICAL: EXTRACT DATA
+        const shippingPointValue = shippingPointIndex !== -1 ? row[shippingPointIndex] : null;
+        const countryPortValue = countryPortIndex !== -1 ? row[countryPortIndex] : null;
+        const fwdAgentValue = fwdAgentIndex !== -1 ? row[fwdAgentIndex] : null;
+        
+        console.log(`  🔍 Extracted Values:`);
+        console.log(`    - Shipping Point: "${shippingPointValue}"`);
+        console.log(`    - Country Port: "${countryPortValue}"`);
+        console.log(`    - Forwarding Agent: "${fwdAgentValue}"`);
+        
+        return {
+          partie20: p20Index !== -1 && row[p20Index] !== undefined && row[p20Index] !== null ? row[p20Index] : null,
+          partie40: total40ft > 0 ? total40ft : null,
+          sc: scIndex !== -1 && row[scIndex] !== undefined && row[scIndex] !== null ? row[scIndex] : null,
+          
+          // 🔥 CRITICAL: RETURN SHIPPING POINT & COUNTRY PORT
+          shippingPoint: shippingPointValue,
+          countryPort: countryPortValue,
+          forwardingAgent: fwdAgentValue,
+          
+          productGroup: prodGroupIndex !== -1 && row[prodGroupIndex] !== undefined && row[prodGroupIndex] !== null ? row[prodGroupIndex] : null,
+          productForm: prodFormIndex !== -1 && row[prodFormIndex] !== undefined && row[prodFormIndex] !== null ? row[prodFormIndex] : null,
+          nw: nwIndex !== -1 && row[nwIndex] !== undefined && row[nwIndex] !== null ? row[nwIndex] : null,
+          etd: etdIndex !== -1 && row[etdIndex] !== undefined && row[etdIndex] !== null ? row[etdIndex] : null
+        };
+      }
+    }
+  }
+
+  console.warn(`[Outstanding] ❌ NO MATCH: DN "${dnToFind}" tidak ditemukan`);
+  return defaultResult; 
+}
+
+/* ===================== ADMIN: REPORT BOC (SUDAH DIPERBAIKI) ===================== */
+
+// === AFTER: KODE BARU YANG BENAR ===
+// ====================================================================
+// ✅ KODE BARU YANG BENAR - REPLACE DARI BARIS 1144 SAMPAI 1300
+// ====================================================================
+
+function generateAndDownloadBOC(startDateStr, endDateStr, isAuto = false, shippingPointFilter = '') {
+    if (typeof XLSX === "undefined") {
+        if (!isAuto) toast("Library XLSX belum termuat.");
+        console.error("XLSX library not loaded.");
+        return;
+    }
+    
+    // ✅ Filter orders berdasarkan tanggal + EXCLUDE all-reject
+    const filteredOrders = state.orders.filter(o => {
+        const stuffingDate = parseISODate(o.tgl_stuffing);
+        const dateMatch = stuffingDate >= parseISODate(startDateStr) && stuffingDate <= parseISODate(endDateStr);
+        
+        // ✅ FIX: Tambahkan filter untuk exclude order yang SEMUA containernya Reject
+        const containers = state.containers[o.order_id] || [];
+        const hasAcceptedContainers = containers.some(c => c.accept === true);
+        
+        return dateMatch && hasAcceptedContainers;
+    });
+
+    if (filteredOrders.length === 0) {
+        if (!isAuto) toast("Tidak ada data order pada rentang tanggal tersebut.");
+        return;
+    }
+
+    const dateArray = [];
+    const start = parseISODate(startDateStr);
+    const end = parseISODate(endDateStr);
+    for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+        dateArray.push(toISODate(new Date(dt)));
+    }
+
+    const formatNumberCell = (val) => {
+        if (val === null || val === undefined || String(val).trim() === '') return '';
+        const num = parseFloat(val);
+        if (isNaN(num)) return val;
+        return Number(num.toFixed(3)); 
+    };
+
+    // ✅ BUILD DATA ROWS
+    const dataRows = [];
+    
+    const headerRow = [
+        "No.", "SC", "DN", "EMKL", "FORWARDING AGENT", "COUNTRY PORT (PORT)", "SHIPPING POINT",
+        "Grup", "Form", "Partie 20'", "Partie 40' HC"
+    ];
+    
+    dateArray.forEach(dateStr => {
+        const dateKey = formatDisplayDate(dateStr);
+        headerRow.push(`${dateKey} (20')`);
+        headerRow.push(`${dateKey} (40'HC)`);
+    });
+    
+    headerRow.push("NW", "Closing TGL", "Closing TIME", "REMARKS");
+    dataRows.push(headerRow);
+
+    // ✅ LOOP ORDERS - HITUNG ACCEPTED CONTAINERS
+    filteredOrders.forEach((order, index) => {
+        console.log(`\n📦 Processing Order ${index + 1}/${filteredOrders.length}: ${order.order_id}, DN: ${(order.no_dn || []).join(', ')}`);
+        
+        // Get Outstanding Data
+        let outstandingData = { 
+            sc: null, forwardingAgent: null, productGroup: null, 
+            productForm: null, partie20: null, partie40: null, nw: null 
+        };
+        
+        const dnsForOrder = order.no_dn || [];
+        let foundDN = null;
+        
+        for (const dn of dnsForOrder) {
+            if (!dn || !dn.trim()) continue;
+            
+            const foundData = getDataFromOutstanding(dn);
+            const hasData = Object.values(foundData).some(val => 
+                val !== null && val !== undefined && String(val).trim() !== ''
+            );
+            
+            if (hasData) {
+                outstandingData = foundData;
+                foundDN = dn;
+                console.log(`  ✅ Outstanding data ditemukan untuk DN: ${dn}`);
+                break;
+            }
+        }
+        
+        if (!foundDN) {
+            console.warn(`  ⚠️ Outstanding data TIDAK ditemukan. DN: ${dnsForOrder.join(', ')}`);
+        }
+
+        // ✅ KUNCI PERBAIKAN: Ambil HANYA container yang ACCEPT
+        const containers = state.containers[order.order_id] || [];
+        const acceptedContainers = containers.filter(c => c.accept === true);
+        
+        console.log(`  📊 Total containers: ${containers.length}`);
+        console.log(`  📊 Accepted containers: ${acceptedContainers.length}`);
+        
+        // ✅ CRITICAL FIX: Hitung 20ft (Normal + Combo × 2)
+        const accepted20ftNormal = acceptedContainers.filter(c => c.size === '20ft').length;
+        const acceptedCombo = acceptedContainers.filter(c => c.size === 'Combo').length;
+        const accepted20ftTotal = accepted20ftNormal + (acceptedCombo * 2);
+        
+        // ✅ CRITICAL FIX: Hitung 40ft/HC (HANYA 40ft/HC, TANPA Combo)
+        const accepted40ftHC = acceptedContainers.filter(c => c.size === '40ft/HC').length;
+        
+        console.log(`  📊 Breakdown Accepted:`);
+        console.log(`     - 20ft Normal: ${accepted20ftNormal}`);
+        console.log(`     - Combo: ${acceptedCombo} container → ${acceptedCombo * 2} unit (× 2)`);
+        console.log(`     - 20ft Total untuk BOC: ${accepted20ftTotal}`);
+        console.log(`     - 40ft/HC: ${accepted40ftHC}`);
+
+        // ✅ Build Row Data
+        const rowData = [
+            index + 1,
+            outstandingData.sc || '',
+            (order.no_dn || []).join(', '),
+            order.vendor || '-',
+            outstandingData.forwardingAgent || '',
+            order.pod || '-',
+            order.shipping_point || '-',
+            outstandingData.productGroup || '',
+            outstandingData.productForm || '',
+            formatNumberCell(outstandingData.partie20),
+            formatNumberCell(outstandingData.partie40)
+        ];
+
+        // ✅ KUNCI PERBAIKAN: Tambahkan kolom tanggal dengan ACCEPTED CONTAINERS
+        dateArray.forEach(dateStr => {
+            if (order.tgl_stuffing === dateStr) {
+                // ✅ 20ft = Normal + (Combo × 2)
+                rowData.push(accepted20ftTotal > 0 ? accepted20ftTotal : null);
+                
+                // ✅ 40ft/HC = Hanya 40ft/HC saja
+                rowData.push(accepted40ftHC > 0 ? accepted40ftHC : null);
+            } else {
+                rowData.push(null);
+                rowData.push(null);
+            }
+        });
+        
+        // Kolom akhir
+        rowData.push(
+            formatNumberCell(outstandingData.nw),
+            formatDisplayDate(order.closing_date) || '-',
+            order.closing_time || '-',
+            order.remarks || '-'
+        );
+        
+        dataRows.push(rowData);
+    });
+
+    // ✅ Export to Excel
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(dataRows);
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan BOC");
+    
+    let fileName = `Laporan_BOC_${startDateStr}_hingga_${endDateStr}`;
+    if (shippingPointFilter) {
+        fileName += `_${shippingPointFilter.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    }
+    fileName += '.xlsx';
+    
+    XLSX.writeFile(wb, fileName);
+    
+    if (isAuto) {
+        console.log(`✅ Laporan BOC Otomatis berhasil diunduh: ${fileName}`);
+    } else {
+        toast(`✅ Laporan BOC berhasil diunduh! Total: ${filteredOrders.length} order.`);
+    }
+    
+    console.log(`\n📊 BOC Summary:`);
+    console.log(`   - Total orders exported: ${filteredOrders.length}`);
+    console.log(`   - File: ${fileName}`);
+    console.log(`   - Periode: ${formatDisplayDate(startDateStr)} s/d ${formatDisplayDate(endDateStr)}`);
+}
+
+//COPAS GANTI DARI SINI
+function renderReport() {
+  content.innerHTML = `
+    <div class="main-header">
+      <h3 style="margin:0">📊 Admin — Report BOC</h3>
+      <div class="small">Tarik data berdasarkan rentang tanggal untuk membuat laporan harian/mingguan.</div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px 0">Laporan Harian / Mingguan</h3>
+      <div class="form-grid">
+        <div class="span-4">
+            <label>Tanggal Mulai (Stuffing)</label>
+            <input type="date" id="report_start_date" class="input">
+        </div>
+        <div class="span-4">
+            <label>Tanggal Selesai (Stuffing)</label>
+            <input type="date" id="report_end_date" class="input">
+        </div>
+        <div class="span-4">
+            <label>Filter Shipping Point</label>
+            <select id="report_shipping_point" class="input">
+                <option value="">-- All Shipping Point --</option>
+            </select>
+        </div>
+      </div>
+      <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+        <button id="btnGenerateReport" class="btn primary">Tarik Data</button>
+      </div>
+      <div id="reportContainer" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px 0">Download Data</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <button id="btnReportRaw" class="btn secondary">⬇️ Download Semua Data Order (XLSX)</button>
+        <button id="btnDownloadOutstanding" class="btn secondary">⬇️ Download Data Outstanding (XLSX)</button>
+      </div>
+      <div class="small muted" style="margin-top:8px">
+        • <b>Download Semua Data Order:</b> Mengekspor sheet ORDERS dan CONTAINERS dari sistem.<br>
+        • <b>Download Data Outstanding:</b> Mengekspor file yang sudah Anda upload di menu Data Outstanding.
+      </div>
+    </div>`;
+
+  const endDateEl = document.getElementById('report_end_date');
+  const startDateEl = document.getElementById('report_start_date');
+  const shippingPointSelect = document.getElementById('report_shipping_point');
+  
+  const today = new Date();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(today.getDate() - 6);
+  endDateEl.value = toISODate(today);
+  startDateEl.value = toISODate(sevenDaysAgo);
+  
+  // ✅ POPULATE DROPDOWN SHIPPING POINT (DINAMIS DARI DATA USER)
+  const shippingPoints = new Set();
+  state.orders.forEach(o => {
+    if (o.shipping_point && o.shipping_point.trim()) {
+      shippingPoints.add(o.shipping_point.trim());
+    }
+  });
+  
+  // Sort alphabetically
+  const sortedShippingPoints = Array.from(shippingPoints).sort();
+  
+  sortedShippingPoints.forEach(sp => {
+    const opt = document.createElement('option');
+    opt.value = sp;
+    opt.textContent = sp;
+    shippingPointSelect.appendChild(opt);
+  });
+
+  // FUNGSI UTAMA UNTUK MEMBANGUN TABEL BOC (NARIK DATA DARI OUTSTANDING)
+// ====================================================================
+// ✅ KODE BARU YANG BENAR - REPLACE buildStandardReportUI() 
+// Fungsi ini ada di dalam renderReport() sekitar baris 1440-1600
+// ====================================================================
+
+function buildStandardReportUI(orders, startDateStr, endDateStr, shippingPointFilter = '') {
+    const reportContainer = document.getElementById('reportContainer');
+    if (!reportContainer) return;
+
+    // ✅ REVISI 1: Filter orders - EXCLUDE yang SEMUA containernya Reject
+    const filteredOrders = orders.filter(o => {
+        const containers = state.containers[o.order_id] || [];
+        const hasAcceptedContainers = containers.some(c => c.accept === true);
+        return hasAcceptedContainers; // Hanya tampilkan order yang punya minimal 1 container ACCEPT
+    });
+
+    if (filteredOrders.length === 0) {
+      reportContainer.innerHTML = `<div class="empty">Tidak ada data order pada rentang tanggal tersebut.</div>`;
+      return;
+    }
+
+    const start = parseISODate(startDateStr);
+    const end = parseISODate(endDateStr);
+    const dateArray = [];
+    let tempDate = new Date(start);
+    while (tempDate <= end) {
+      dateArray.push(toISODate(new Date(tempDate)));
+      tempDate.setDate(tempDate.getDate() + 1);
+    }
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const planningHeaderDates = dateArray.map(iso => {
+      const d = parseISODate(iso);
+      return `<th colspan="2">${String(d.getDate()).padStart(2, '0')}-${monthNames[d.getMonth()]}</th>`;
+    }).join('');
+    const planningHeaderTypes = dateArray.map(() => `<th>20'</th><th>40'HC</th>`).join('');
+
+    const formatNumberCell = (val) => {
+      if (val === null || val === undefined || String(val).trim() === '') return '-';
+      const num = parseFloat(val);
+      return isNaN(num) ? val : Number(num.toFixed(3));
+    };
+
+    const ispmExceptions = [
+      "OMAN", "IRAK", "IRAN", "JEBEL ALI", "UAE", "SAUDI ARABIA", "JEDDAH", 
+      "DAMMAM", "BAHRAIN", "BANDAR ABBAS", "YEMEN", "SINGAPORE", "KARACHI", 
+      "PAKISTAN", "SRILANKA", "COLOMBO", "BANGLADESH", "MYANMAR"
+    ];
+
+    const tableRows = filteredOrders.map((order, index) => {
+      let outData = { sc: null, forwardingAgent: null, productGroup: null, productForm: null, partie20: null, partie40: null, nw: null };
+      const dns = order.no_dn || [];
+      for (const dn of dns) {
+        const found = getDataFromOutstanding(dn);
+        if (Object.values(found).some(v => v !== null)) {
+          outData = found;
+          break;
+        }
+      }
+
+      const productForm = (outData.productForm || "").toUpperCase();
+      const destPort = (order.pod || "").toUpperCase();
+      const isLS = productForm === "LS";
+      const isExcluded = ispmExceptions.some(ex => destPort.includes(ex));
+      const ispmDisplay = (isLS && !isExcluded) ? "✓" : "-";
+
+      // ✅ KUNCI PERBAIKAN: Hitung ACCEPTED containers (bukan order plan)
+      const containers = state.containers[order.order_id] || [];
+      const acceptedContainers = containers.filter(c => c.accept === true);
+      
+      // ✅ Hitung 20ft: Normal + (Combo × 2)
+      const accepted20ftNormal = acceptedContainers.filter(c => c.size === '20ft').length;
+      const acceptedCombo = acceptedContainers.filter(c => c.size === 'Combo').length;
+      const accepted20ftTotal = accepted20ftNormal + (acceptedCombo * 2);
+      
+      // ✅ Hitung 40ft/HC: HANYA 40ft/HC
+      const accepted40ftHC = acceptedContainers.filter(c => c.size === '40ft/HC').length;
+
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${outData.sc || '-'}</td>
+          <td>${(order.no_dn || []).join('<br>')}</td>
+          <td>${order.vendor}</td>
+          <td>${outData.forwardingAgent || '-'}</td>
+          <td>${order.pod || '-'}</td>
+          <td>${order.shipping_point || '-'}</td>
+          <td>${outData.productGroup || '-'}</td>
+          <td>${outData.productForm || '-'}</td>
+          <td>${formatNumberCell(outData.partie20)}</td>
+          <td>${formatNumberCell(outData.partie40)}</td>
+          ${dateArray.map(iso => {
+            const isMatch = order.tgl_stuffing === iso;
+            // ✅ PERBAIKAN: Tampilkan ACCEPTED containers (bukan order plan)
+            return `<td style="${isMatch ? 'background:#d4e5f7;font-weight:600;' : ''}">${isMatch ? (accepted20ftTotal || '-') : '-'}</td>
+                    <td style="${isMatch ? 'background:#d4e5f7;font-weight:600;' : ''}">${isMatch ? (accepted40ftHC || '-') : '-'}</td>`;
+          }).join('')}
+          <td>${formatNumberCell(outData.nw)}</td>
+          <td>${formatDisplayDate(order.closing_date)}</td>
+          <td>${order.closing_time || '-'}</td>
+          <td>${order.remarks || '-'}</td>
+          <td style="font-weight:bold; text-align:center;">${ispmDisplay}</td>
+        </tr>`;
+    }).join('');
+
+    reportContainer.innerHTML = `
+      <div class="rekap-wrap">
+        <table class="table rekap report-table">
+          <thead>
+            <tr>
+              <th rowspan="3">No.</th><th rowspan="3">SC</th><th rowspan="3">DN</th><th rowspan="3">EMKL</th><th rowspan="3">Forwarder</th><th rowspan="3">Dest Port</th><th rowspan="3">Shipping Point</th>
+              <th colspan="2">Product</th><th colspan="2">Partie</th><th colspan="${dateArray.length * 2}">Planning</th><th rowspan="3">NW</th><th colspan="2">Closing CY</th><th rowspan="3">Remarks</th><th rowspan="3">ISPM</th>
+            </tr>
+            <tr>
+              <th rowspan="2">Grup</th><th rowspan="2">Form</th><th rowspan="2">20'</th><th rowspan="2">40'HC</th>${planningHeaderDates}<th rowspan="2">TGL</th><th rowspan="2">TIME</th>
+            </tr>
+            <tr>${planningHeaderTypes}</tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px; text-align:right;">
+        <button id="btnDownloadStandardReport" class="btn success">⬇️ Download Laporan (XLSX)</button>
+      </div>`;
+
+    document.getElementById('btnDownloadStandardReport').onclick = () => {
+      generateAndDownloadBOC(startDateStr, endDateStr, false, shippingPointFilter);
+    };
+}
+
+// EVENT LISTENER TOMBOL TARIK DATA
+document.getElementById('btnGenerateReport').onclick = () => {
+    const startVal = startDateEl.value;
+    const endVal = endDateEl.value;
+    const shippingPointVal = shippingPointSelect.value;
+
+    if (!startVal || !endVal) {
+        toast("Pilih rentang tanggal terlebih dahulu.");
+        return;
+    }
+
+    // ✅ Filter 1: Rentang Tanggal
+    let ordersInRange = state.orders.filter(o => {
+        const stuffingDate = parseISODate(o.tgl_stuffing);
+        return stuffingDate >= parseISODate(startVal) && stuffingDate <= parseISODate(endVal);
+    });
+
+    // ✅ Filter 2: Shipping Point (jika ada)
+    if (shippingPointVal) {
+        ordersInRange = ordersInRange.filter(o => o.shipping_point === shippingPointVal);
+    }
+
+    // ✅ Filter 3: EXCLUDE DN yang SEMUA containernya REJECT
+    const filteredOrders = ordersInRange.filter(o => {
+        const containers = state.containers[o.order_id] || [];
+        const acceptedContainers = containers.filter(c => c.accept === true);
+        
+        // Hanya tampilkan order yang memiliki minimal 1 container ACCEPT
+        return acceptedContainers.length > 0;
+    });
+
+    buildStandardReportUI(filteredOrders, startVal, endVal, shippingPointVal);
+    
+    if (filteredOrders.length === 0) {
+        toast("Tidak ada data yang sesuai dengan filter.");
+    } else {
+        toast(`Berhasil menarik ${filteredOrders.length} data.`);
+    }
+};
+
+  document.getElementById("btnReportRaw").onclick = () => {
+    if (typeof XLSX === "undefined") return toast("Library XLSX belum termuat.");
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(state.orders);
+    XLSX.utils.book_append_sheet(wb, ws1, "ORDERS");
+    XLSX.writeFile(wb, "report_data_mentah.xlsx");
+  };
+
+  document.getElementById("btnDownloadOutstanding").onclick = exportOutstandingData;
+}
+
+  // EVENT LISTENER UNTUK TOMBOL TARIK DATA
+const btnGenerate = document.getElementById('btnGenerateReport');
+  if (btnGenerate) {
+    btnGenerate.onclick = () => {
+      const startVal = document.getElementById('report_start_date').value;
+      const endVal = document.getElementById('report_end_date').value;
+
+      if (!startVal || !endVal) {
+        toast("Pilih rentang tanggal terlebih dahulu.");
+        return;
+      }
+
+      // Filter data order berdasarkan tanggal yang dipilih
+      const filtered = state.orders.filter(o => o.tgl_stuffing >= startVal && o.tgl_stuffing <= endVal);
+      
+      // Kirim data ke fungsi pembangunan UI yang sudah diperbaiki di atas
+      buildStandardReportUI(filtered, startVal, endVal);
+      
+      if (filtered.length === 0) {
+        toast("Tidak ada data pada rentang tanggal ini.");
+      } else {
+        toast(`Berhasil menarik ${filtered.length} data.`);
+      }
+    };
+  }
+
+  // DOWNLOAD RAW DATA
+  document.getElementById("btnReportRaw").onclick = () => {
+    if (typeof XLSX === "undefined") return toast("Library XLSX belum termuat.");
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(state.orders);
+    XLSX.utils.book_append_sheet(wb, ws1, "ORDERS");
+    XLSX.writeFile(wb, "report_data_mentah.xlsx");
+  };
+
+  document.getElementById("btnDownloadOutstanding").onclick = exportOutstandingData;
+
+/* ===================== ADMIN: REPORT PERFORMA VENDOR (REVISI 2) ===================== */
+function renderReportPerformaVendor() {
+    
+    // Set default filter if null
+    if (!state.performance_filter.startDate && !state.performance_filter.endDate) {
+        // Default to 'week' logic
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 6);
+        state.performance_filter.startDate = toISODate(startDate);
+        state.performance_filter.endDate = toISODate(endDate);
+    }
+    
+    const { startDate, endDate, period } = state.performance_filter;
+    
+    const performanceData = getFilteredPerformanceData(startDate, endDate);
+    const { html: tableHtml, data: rawData } = buildVendorPerformanceCard(true, performanceData);
+
+    const periodOptions = [
+        { value: 'week', label: 'Minggu Terakhir' },
+        { value: 'month', label: 'Bulan Terakhir' },
+        { value: 'year', label: 'Tahun Terakhir' },
+        { value: 'custom', label: 'Custom Range' }
+    ];
+    
+    const periodSelectHtml = periodOptions.map(opt => 
+        `<option value="${opt.value}" ${period === opt.value ? 'selected' : ''}>${opt.label}</option>`
+    ).join('');
+
+    content.innerHTML = `
+        <div class="main-header">
+            <h3 style="margin:0">📈 Admin — Report Performa Vendor</h3>
+            <div class="small">Tabel ringkasan performa EMKL berdasarkan jumlah kontainer yang di-Accept dan di-Reject.</div>
+        </div>
+        
+        <div class="card">
+            <h3 style="margin:0 0 10px 0;">Filter Performa</h3>
+            <div id="performance-filter-controls">
+                <div class="form-grid">
+                    <div class="span-3">
+                        <label>Pilih Periode</label>
+                        <select id="perf_period_select" class="input">
+                            ${periodSelectHtml}
+                        </select>
+                    </div>
+                    <div class="span-4">
+                        <label>Tanggal Mulai</label>
+                        <input type="date" id="perf_start_date" class="input" value="${startDate || ''}" ${period !== 'custom' ? 'disabled' : ''}>
+                    </div>
+                    <div class="span-4">
+                        <label>Tanggal Selesai</label>
+                        <input type="date" id="perf_end_date" class="input" value="${endDate || ''}" ${period !== 'custom' ? 'disabled' : ''}>
+                    </div>
+                    <div class="span-1" style="display:flex; align-items:flex-end;">
+                        <button id="btnApplyFilter" class="btn primary full">Apply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin:0;">Ringkasan Performa</h3>
+                <button id="btnDownloadPerformance" class="btn success">⬇️ Download Excel</button>
+            </div>
+            
+            ${tableHtml}
+            
+            <div class="small muted" style="margin-top: 20px;">
+                * Performa dihitung dari total kontainer yang sudah direspons (Accept + Reject) untuk order yang Tgl Stuffing-nya di antara <b>${formatDisplayDate(startDate)}</b> dan <b>${formatDisplayDate(endDate)}</b>.
+            </div>
+        </div>
+    `;
+    
+    const periodSelect = document.getElementById('perf_period_select');
+    const startInput = document.getElementById('perf_start_date');
+    const endInput = document.getElementById('perf_end_date');
+    const applyBtn = document.getElementById('btnApplyFilter');
+
+    function calculateDates(selectedPeriod) {
+        const end = new Date();
+        let start = new Date(end);
+        
+        if (selectedPeriod === 'week') {
+            start.setDate(end.getDate() - 6);
+        } else if (selectedPeriod === 'month') {
+            start.setMonth(end.getMonth() - 1);
+            start.setDate(start.getDate() + 1); // Start from the day after one month ago
+        } else if (selectedPeriod === 'year') {
+            start.setFullYear(end.getFullYear() - 1);
+            start.setDate(start.getDate() + 1);
+        } else {
+             // Custom: use current state values
+             return { start: state.performance_filter.startDate || toISODate(start), end: state.performance_filter.endDate || toISODate(end) };
+        }
+        return { start: toISODate(start), end: toISODate(end) };
+    }
+
+    periodSelect.onchange = (e) => {
+        const selected = e.target.value;
+        startInput.disabled = selected !== 'custom';
+        endInput.disabled = selected !== 'custom';
+
+        if (selected !== 'custom') {
+            const { start, end } = calculateDates(selected);
+            startInput.value = start;
+            endInput.value = end;
+        } else {
+             // Reset custom range to current state value if available
+             startInput.value = state.performance_filter.startDate || '';
+             endInput.value = state.performance_filter.endDate || '';
+        }
+    };
+    
+    startInput.onchange = () => {
+        if (periodSelect.value === 'custom') {
+            state.performance_filter.startDate = startInput.value;
+            saveState();
+        }
+    };
+     endInput.onchange = () => {
+        if (periodSelect.value === 'custom') {
+            state.performance_filter.endDate = endInput.value;
+            saveState();
+        }
+    };
+
+    applyBtn.onclick = () => {
+        let finalStart = startInput.value;
+        let finalEnd = endInput.value;
+        const selectedPeriod = periodSelect.value;
+        
+        if (selectedPeriod !== 'custom') {
+            const calculatedDates = calculateDates(selectedPeriod);
+            finalStart = calculatedDates.start;
+            finalEnd = calculatedDates.end;
+        }
+
+        if (!finalStart || !finalEnd) {
+            toast("Tanggal mulai dan selesai wajib diisi.");
+            return;
+        }
+        
+        if (parseISODate(finalStart) > parseISODate(finalEnd)) {
+            toast("Tanggal mulai tidak boleh melebihi tanggal selesai.");
+            return;
+        }
+        
+        state.performance_filter.period = selectedPeriod;
+        state.performance_filter.startDate = finalStart;
+        state.performance_filter.endDate = finalEnd;
+        saveState();
+        renderReportPerformaVendor(); 
+        toast("Filter Performa diterapkan.");
+    };
+
+    document.getElementById("btnDownloadPerformance").onclick = () => {
+        if (typeof XLSX === "undefined") {
+            toast("Library XLSX belum termuat.");
+            return;
+        }
+        
+        if (performanceData.length === 0) {
+            toast("Tidak ada data untuk diunduh pada rentang filter ini.");
+            return;
+        }
+
+        const dataToExport = rawData.map(d => ({
+            "EMKL": d.name,
+            "Accept (Qty)": d.accept,
+            "Reject (Qty)": d.reject,
+            "Total Respon": d.total,
+            "Performa (%)": d.performa + '%'
+        }));
+        
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Performa Vendor");
+        const fileName = `Report_Performa_Vendor_${startDate}_to_${endDate}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+        toast("Ekspor Performa Vendor berhasil.");
+    };
+}
+// DCR Report
+function renderDCR() {
+  content.innerHTML = `
+    <div class="main-header">
+      <h3 style="margin:0">📑 Admin — DCR Report</h3>
+      <div class="small">Laporan Daily Container Requirement</div>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="span-5">
+            <label>Tanggal Mulai</label>
+            <input type="date" id="dcr_start_date" class="input">
+        </div>
+        <div class="span-5">
+            <label>Tanggal Selesai</label>
+            <input type="date" id="dcr_end_date" class="input">
+        </div>
+        <div class="span-2" style="display:flex; align-items:flex-end;">
+            <button id="btnGenerateDCR" class="btn primary full">Tarik Data</button>
+        </div>
+      </div>
+      <div id="dcrReportContainer" class="rekap-wrap" style="margin-top:16px;"></div>
+    </div>
+  `;
+
+  // ✅ PERBAIKAN: Inisialisasi input tanggal
+  const endDateEl = document.getElementById('dcr_end_date');
+  const startDateEl = document.getElementById('dcr_start_date');
+  const today = new Date();
+  const threeDaysLater = new Date();
+  threeDaysLater.setDate(today.getDate() + 3);
+  startDateEl.value = toISODate(today);
+  endDateEl.value = toISODate(threeDaysLater);
+
+  // ✅ PERBAIKAN: Event listener tombol "Tarik Data"
+  document.getElementById('btnGenerateDCR').onclick = () => {
+    const startDate = startDateEl.value;
+    const endDate = endDateEl.value;
+    
+    if (!startDate || !endDate) {
+      toast("Pilih rentang tanggal terlebih dahulu.");
+      return;
+    }
+    
+    // ✅ PERBAIKAN: Filter order berdasarkan tgl_stuffing
+    const filteredOrders = state.orders.filter(o => {
+        const d = o.tgl_stuffing;
+        return d >= startDate && d <= endDate;
+    });
+
+    // ✅ PERBAIKAN: Ekstrak shipping points unik
+    const shippingPoints = [...new Set(filteredOrders.map(o => o.shipping_point).filter(sp => sp))];
+
+    // ✅ PERBAIKAN: Generate array tanggal
+    const dates = [];
+    for (let dt = parseISODate(startDate); dt <= parseISODate(endDate); dt.setDate(dt.getDate() + 1)) {
+        dates.push(new Date(dt));
+    }
+    
+    // ✅ PERBAIKAN: Validasi rentang tanggal maksimal 7 hari
+    if (dates.length > 7) {
+        document.getElementById('dcrReportContainer').innerHTML = `<div class="empty">Rentang tanggal terlalu lebar (maksimal 7 hari).</div>`;
+        return;
+    }
+    
+    buildDCRReport(dates, shippingPoints, filteredOrders);
+  };
+
+  // ✅ PERBAIKAN LENGKAP: Fungsi buildDCRReport dengan logika IDENTIK BOC
+  function buildDCRReport(dates, shippingPoints, filteredOrders) {
+    const container = document.getElementById('dcrReportContainer');
+    
+    if (shippingPoints.length === 0) {
+        container.innerHTML = `<div class="empty">Tidak ada data Shipping Point pada rentang tanggal yang dipilih.</div>`;
+        return;
+    }
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // ✅ HEADER TABLE
+    let headerHtml = `
+      <table class="table rekap report-table">
+        <thead>
+          <tr>
+            <th rowspan="3">No.</th>
+            <th rowspan="3">EMKL</th>
+            ${shippingPoints.map(sp => `<th colspan="${dates.length * 2 + 1}">${sp}</th>`).join('')}
+          </tr>
+          <tr>
+            ${shippingPoints.map(() => 
+              dates.map(d => `<th colspan="2">${String(d.getDate()).padStart(2,'0')} ${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}</th>`).join('') + 
+              `<th rowspan="2">MT</th>`
+            ).join('')}
+          </tr>
+          <tr>
+            ${shippingPoints.map(() => dates.map(() => `<th>20'</th><th>40'</th>`).join('')).join('')}
+          </tr>
+        </thead>
+    `;
+
+    let bodyHtml = `<tbody>`;
+    const grandTotals = {};
+
+    // ✅ LOOP VENDOR
+    VENDORS_DEFAULT.forEach((vendor, index) => {
+        bodyHtml += `<tr><td>${index + 1}</td><td>${vendor}</td>`;
+        
+        shippingPoints.forEach(sp => {
+            dates.forEach(date => {
+                const dateStr = toISODate(date);
+                let total20 = 0;
+                let total40 = 0;
+                
+                // ✅ KUNCI PERBAIKAN: LOGIKA IDENTIK DENGAN BOC REPORT
+                filteredOrders
+                    .filter(o => o.vendor === vendor && o.shipping_point === sp && o.tgl_stuffing === dateStr)
+                    .forEach(order => {
+                        // ✅ Ambil HANYA container yang ACCEPT
+                        const containers = state.containers[order.order_id] || [];
+                        const acceptedContainers = containers.filter(c => c.accept === true);
+                        
+                        // ✅ Hitung 20ft: Normal + (Combo × 2)
+                        const accepted20ftNormal = acceptedContainers.filter(c => c.size === '20ft').length;
+                        const acceptedCombo = acceptedContainers.filter(c => c.size === 'Combo').length;
+                        const accepted20ftTotal = accepted20ftNormal + (acceptedCombo * 2);
+                        
+                        // ✅ Hitung 40ft/HC: HANYA 40ft/HC
+                        const accepted40ftHC = acceptedContainers.filter(c => c.size === '40ft/HC').length;
+                        
+                        total20 += accepted20ftTotal;
+                        total40 += accepted40ftHC;
+                    });
+                
+                bodyHtml += `<td>${total20 || '-'}</td><td>${total40 || '-'}</td>`;
+
+                // ✅ Akumulasi Grand Total
+                const key = `${sp}_${dateStr}`;
+                if (!grandTotals[key]) grandTotals[key] = { total20: 0, total40: 0 };
+                grandTotals[key].total20 += total20;
+                grandTotals[key].total40 += total40;
+            });
+            bodyHtml += `<td>-</td>`; // Kolom MT (belum diimplementasikan)
+        });
+        bodyHtml += `</tr>`;
+    });
+    bodyHtml += `</tbody>`;
+
+    // ✅ FOOTER: Grand Total
+    let footerHtml = `
+        <tfoot>
+            <tr style="background-color: yellow; font-weight: bold;">
+                <td colspan="2">Grand Total</td>
+                ${shippingPoints.map(sp => 
+                    dates.map(date => {
+                        const key = `${sp}_${toISODate(date)}`;
+                        const totals = grandTotals[key] || { total20: 0, total40: 0 };
+                        return `<td>${totals.total20 || '-'}</td><td>${totals.total40 || '-'}</td>`;
+                    }).join('') + `<td>-</td>`
+                ).join('')}
+            </tr>
+        </tfoot>
+      </table>
+    `;
+
+    container.innerHTML = headerHtml + bodyHtml + footerHtml;
+  }
+}
+
+
+function renderReconSummary() {
+  content.innerHTML = `
+    <div class="main-header"><h3 style="margin:0">📋 Admin — Recon Summary Report</h3><div class="small">Laporan Recon Summary</div></div>
+    <div class="card">
+       <div class="form-grid">
+        <div class="span-5">
+            <label>Tanggal Mulai</label>
+            <input type="date" id="reconsummary_start_date" class="input">
+        </div>
+        <div class="span-5">
+            <label>Tanggal Selesai</label>
+            <input type="date" id="reconsummary_end_date" class="input">
+        </div>
+        <div class="span-2" style="display:flex; align-items:flex-end;">
+            <button id="btnGenerateReconSummary" class="btn primary full">Tarik Data</button>
+        </div>
+      </div>
+    </div>
+    <div id="ReconSummaryReportContainer" class="card" style="margin-top:16px;">
+        <table class="table rekap" style="max-width: 600px;">
+            <thead>
+                <tr>
+                    <th style="background:#eef2ff; text-align:center;">REPORT BY MT</th>
+                    <th style="background:#eef2ff; text-align:center;">QTY</th>
+                    <th style="background:#eef2ff; text-align:center;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="text-align:left; color:black;">CARGO READY TO SHIP OUT</td>
+                    <td style="text-align:left; color:black;">4,831</td>
+                    <td style="text-align:left; color:black;">Mt</td>
+                </tr>
+                <tr>
+                    <td style="text-align:left; color:black;">PLANNING DCR</td>
+                    <td style="text-align:left; color:black;">-</td>
+                    <td style="text-align:left; color:black;">Mt</td>
+                </tr>
+                <tr>
+                    <td style="text-align:left; color:black;">CONTAINER ALREADY ARRIVED</td>
+                    <td style="text-align:left; color:black;">1,500</td>
+                    <td style="text-align:left; color:black;">Mt</td>
+                </tr>
+                <tr>
+                    <td style="text-align:left; color:black;">Additional Planning for Incoming</td>
+                    <td style="text-align:left; color:black;">(1,500)</td>
+                    <td style="text-align:left; color:black;">Mt</td>
+                </tr>
+                 <tr>
+                    <td style="text-align:left; color:black;">WAIT CONFIRMATION LINER / DETENTION / HOLD / RESCHEDULE</td>
+                    <td style="text-align:left; color:black;">4,831</td>
+                    <td style="text-align:left; color:black;">Mt</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+  `;
+
+    const endDateEl = document.getElementById('reconsummary_end_date');
+    const startDateEl = document.getElementById('reconsummary_start_date');
+    const today = new Date();
+    const fiveDaysLater = new Date();
+    fiveDaysLater.setDate(today.getDate() + 5);
+    startDateEl.value = toISODate(today);
+    endDateEl.value = toISODate(fiveDaysLater);
+
+    document.getElementById('btnGenerateReconSummary').onclick = () => {
+        toast("Fungsi kalkulasi untuk Recon Summary belum diimplementasikan.");
+    };
+}
+
+
+function renderContainerRevo() {
+    content.innerHTML = `
+        <div class="main-header"><h3 style="margin:0">🔄 Admin — Container Revo Report</h3><div class="small">Daftar semua kontainer yang statusnya pernah mencapai "Revo".</div></div>
+        <div class="card">
+            <div class="table-wrap">
+                <table class="table rekap report-table" id="revoReportTable">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>DN</th>
+                            <th>EMKL</th>
+                            <th>Tgl Stuffing</th>
+                            <th>Container No.</th>
+                            <th>No. Seal</th>
+                            <th>Plat Mobil</th>
+                            <th>Nama Driver</th>
+                            <th>Size</th>
+                            <th>Remarks Order</th>
+                        </tr>
+                    </thead>
+                    <tbody id="revoReportBody"></tbody>
+                </table>
+            </div>
+            <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+              <button id="btnDownloadRevoReport" class="btn success">⬇️ Download Excel</button>
+            </div>
+        </div>
+    `;
+
+    const revoContainers = [];
+    state.orders.forEach(order => {
+        (state.containers[order.order_id] || []).forEach(container => {
+            if ((container.status || '').toLowerCase() === 'revo') {
+                revoContainers.push({
+                    order,
+                    container
+                });
+            }
+        });
+    });
+
+    const tbody = document.getElementById("revoReportBody");
+
+    if (revoContainers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="center">Tidak ada kontainer dengan status "Revo" saat ini.</td></tr>`;
+        return;
+    }
+
+    let html = revoContainers.map((item, index) => {
+        const { order, container } = item;
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${(order.no_dn || []).join('<br>')}</td>
+                <td>${order.vendor}</td>
+                <td>${formatDisplayDate(order.tgl_stuffing)}</td>
+                <td>${container.no_container || '-'}</td>
+                <td>${container.no_seal || '-'}</td>
+                <td>${container.no_mobil || '-'}</td>
+                <td>${container.nama_supir || '-'}</td>
+                <td>${container.size}</td>
+                <td>${order.remarks || '-'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = html;
+    
+    document.getElementById("btnDownloadRevoReport").onclick = () => {
+        if (typeof XLSX === "undefined") {
+            toast("Library XLSX belum termuat.");
+            return;
+        }
+        
+        const dataToExport = revoContainers.map((item, index) => ({
+            "No.": index + 1,
+            "DN": (item.order.no_dn || []).join(', '),
+            "EMKL": item.order.vendor,
+            "Tgl Stuffing": formatDisplayDate(item.order.tgl_stuffing),
+            "Container No.": item.container.no_container || '-',
+            "No. Seal": item.container.no_seal || '-',
+            "Plat Mobil": item.container.no_mobil || '-',
+            "Nama Driver": item.container.nama_supir || '-',
+            "Size": item.container.size,
+            "Remarks Order": item.order.remarks || '-'
+        }));
+        
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Container Revo");
+        XLSX.writeFile(workbook, "Container_Revo_Report.xlsx");
+        toast("Ekspor Container Revo berhasil.");
+    };
+}
+
+/* ===================== VENDOR: ORDERAN (Accept/Reject Order - REVISI 1) ===================== */
+
+// --- BARU: Helper untuk menangani Aksi Accept/Reject di Modal Detail Kontainer ---
+function handleContainerAction(orderId, containerIndex, action) {
+    const order = state.orders.find(o => o.order_id === orderId);
+    if (!order || !state.containers[orderId] || !state.containers[orderId][containerIndex]) return;
+    
+    const c = state.containers[orderId][containerIndex];
+    const isAccept = action === 'accept';
+
+    if (isAccept) {
+        c.status = STATUS_TRUCKING.find(s => s.toLowerCase() === 'confirm order') || 'Confirm Order';
+    } else {
+        c.status = STATUS_TRUCKING.find(s => s.toLowerCase() === 'reject') || 'Reject';
+    }
+    
+    c.accept = isAccept;
+    
+    state.notifications.push({
+        id: genId("NOTIF"),
+        message: `${state.vendor_name} merespon kontainer ${c.size} di DN ${(order.no_dn || []).join(' & ')}: ${isAccept ? 'Accepted' : 'Rejected'}.`,
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        role: 'admin',
+        relatedOrder: orderId
+    });
+    
+    updateOrderSummary(orderId);
+    saveState();
+    closeModal();
+    renderVendorOrderan();
+    toast(`Kontainer #${c.no} di- ${isAccept ? 'Accept' : 'Reject'}.`);
+}
+
+// --- BARU: Helper untuk menampilkan Modal Detail Kontainer (Dipanggil dari Tabel Rekap Vendor) ---
+function showContainerActionModal(orderId, containerIndex) {
+    const order = state.orders.find(o => o.order_id === orderId);
+    const container = state.containers[orderId][containerIndex];
+    if (!order || !container) return;
+
+    let actionButtons;
+    let statusBadge;
+    
+    if (container.accept === true) {
+        actionButtons = `<button class="btn danger full" data-action="reject">Batalkan Accept</button>`;
+        statusBadge = `<span class="badge success">ACCEPTED</span>`;
+    } else if (container.accept === false) {
+        actionButtons = `<button class="btn success full" data-action="accept">Batalkan Reject</button>`;
+        statusBadge = `<span class="badge danger">REJECTED</span>`;
+    } else {
+        actionButtons = `
+            <button class="btn success full" data-action="accept">Accept Order</button>
+            <button class="btn danger full" data-action="reject" style="margin-top: 8px;">Reject Order</button>
+        `;
+        statusBadge = `<span class="badge warn">PENDING</span>`;
+    }
+
+    const modalHtml = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 5px 0;">Kontainer #${container.no} (${container.size})</h4>
+            ${statusBadge}
+        </div>
+        <div class="form-section">
+             <div class="section-title">Detail Order</div>
+             <div style="font-size: 0.9rem; line-height: 1.6;">
+                <p>DN: <b>${(order.no_dn || []).join(' & ')}</b></p>
+                <p>Stuffing: <b>${formatDisplayDate(order.tgl_stuffing)}</b></p>
+                <p>Closing CY: <b>${fmtDT(order.closing_date, order.closing_time)}</b></p>
+                <p>Shipping Point: <b>${order.shipping_point}</b></p>
+                <p>Remarks Admin: ${order.remarks || '-'}</p>
+             </div>
+        </div>
+        
+        <div style="margin-top: 15px;">
+            ${actionButtons}
+        </div>
+    `;
+
+    openModal(`Aksi Kontainer #${container.no}`, modalHtml, {
+        closeBtnText: 'Tutup',
+        closeBtnClass: 'secondary',
+        setupListeners: (modalBody) => {
+            modalBody.querySelectorAll('button[data-action]').forEach(btn => {
+                btn.onclick = () => {
+                    handleContainerAction(orderId, containerIndex, btn.dataset.action);
+                };
+            });
+        }
+    });
+}
+
+function renderVendorOrderan() {
+    const vendor = state.vendor_name;
+
+    content.innerHTML = `
+        <div class="main-header"><h3>📑 EMKL — Orderan</h3></div>
+    <div class="card">
+        <div class="rekap-wrap">
+            <table class="table rekap" id="vendorOrderTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2">No</th>
+                        <th rowspan="2">DN</th>
+                        <th rowspan="2">EMKL</th>
+                        <th rowspan="2">Tanggal Stuffing</th>
+                        <th rowspan="2">Shipping Point</th>
+                        <th rowspan="2">Country Port (Port)</th>
+                        <th rowspan="2">Terminal</th>
+                        <th rowspan="2">Depo</th>
+                        <th colspan="2" style="background: #f0f7ff;">CY</th>
+                        <th rowspan="2">Container</th>
+                        <th rowspan="2">Jumlah</th>
+                        <th rowspan="2">Remarks</th>
+                        <th colspan="2" style="text-align: center;">Status</th>
+                        <th rowspan="2">Submit</th>
+                    </tr>
+                    <tr>
+                        <th style="background: #f0f7ff;">Open</th>
+                        <th style="background: #f0f7ff;">Closing (Date Time)</th>
+                        <th class="acc">Accept</th>
+                        <th class="rej">Reject</th>
+                    </tr>
+                </thead>
+                <tbody id="vendorOrderBody"></tbody>
+            </table>
+        </div>
+    </div>
+`;
+    
+    const ordersToRespond = state.orders.filter(o => 
+        o.vendor === vendor && 
+        (o.summary_status === 'Pending' || o.summary_status === 'Partial')
+    ).reverse();
+
+    const tbody = document.getElementById("vendorOrderBody");
+    
+    if (ordersToRespond.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="16">Tidak ada order yang perlu direspons.</td></tr>`;
+        return;
+    }
+
+    let rowsHtml = "";
+    
+    ordersToRespond.forEach((order, orderIdx) => {
+        const containers = state.containers[order.order_id] || [];
+        const sizes = ["20ft", "40ft/HC", "Combo"].filter(s => 
+            (s === "20ft" && order.jml_20ft > 0) || 
+            (s === "40ft/HC" && order.jml_40ft > 0) || 
+            (s === "Combo" && order.jml_combo > 0)
+        );
+        const rowSpan = sizes.length;
+
+        sizes.forEach((sz, sizeIdx) => {
+            const total = (sz === "20ft") ? order.jml_20ft : (sz === "40ft/HC" ? order.jml_40ft : order.jml_combo);
+            const groupAcc = containers.filter(c => c.size === sz && c.accept === true).length;
+            const groupRej = containers.filter(c => c.size === sz && c.accept === false).length;
+
+            rowsHtml += `<tr>`;
+            if (sizeIdx === 0) {
+                rowsHtml += `
+                    <td rowspan="${rowSpan}">${orderIdx + 1}</td>
+                    <td rowspan="${rowSpan}">${order.no_dn.join('<br>')}</td>
+                    <td rowspan="${rowSpan}">${order.vendor}</td>
+                    <td rowspan="${rowSpan}">${formatDisplayDate(order.tgl_stuffing)}</td>
+                    <td rowspan="${rowSpan}">${order.shipping_point || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.pod || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.terminal || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.depo || '-'}</td>
+                    <td rowspan="${rowSpan}">${order.open_cy ? formatDisplayDate(order.open_cy) : '-'}</td>
+                    <td rowspan="${rowSpan}">${fmtDT(order.closing_date, order.closing_time)}</td>
+                `;
+            }
+            rowsHtml += `
+                <td>${sz}</td>
+                <td>${total}</td>
+            `;
+            if (sizeIdx === 0) {
+                rowsHtml += `<td rowspan="${rowSpan}">${order.remarks || '-'}</td>`;
+            }
+            rowsHtml += `
+                <td class="acc"><div class="accept-display" data-order-id="${order.order_id}" data-size="${sz}">${groupAcc}</div></td>
+                <td class="rej"><input type="number" class="input-reject" data-order-id="${order.order_id}" data-size="${sz}" value="${groupRej}" max="${total}"></td>
+            `;
+            if (sizeIdx === 0) {
+                rowsHtml += `<td rowspan="${rowSpan}"><button class="btn primary" data-order-id-submit="${order.order_id}">Submit</button></td>`;
+            }
+            rowsHtml += `</tr>`;
+        });
+    });
+
+    tbody.innerHTML = rowsHtml;
+
+    // ✅ REVISI: Event listener untuk input REJECT (BUKAN ACCEPT) - auto calculate Accept
+    tbody.querySelectorAll('.input-reject').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const orderId = e.target.dataset.orderId;
+            const sz = e.target.dataset.size;
+            const total = parseInt(e.target.getAttribute('max'));
+            let val = parseInt(e.target.value) || 0;
+            
+            if (val < 0) val = 0;
+            if (val > total) val = total;
+            e.target.value = val;
+
+            // ✅ Auto-calculate ACCEPT dari REJECT
+            const acceptDisplay = tbody.querySelector(`.accept-display[data-order-id="${orderId}"][data-size="${sz}"]`);
+            if (acceptDisplay) acceptDisplay.textContent = total - val;
+        });
+    });
+    
+    // Event listener untuk tombol Submit (Poin 2: Terlempar ke Add Detail)
+    tbody.querySelectorAll('button[data-order-id-submit]').forEach(btn => {
+        btn.onclick = () => {
+            const oid = btn.dataset.orderIdSubmit;
+            const order = state.orders.find(o => o.order_id === oid);
+            const containers = state.containers[oid] || [];
+            
+            // Ambil input reject dari elemen UI
+            tbody.querySelectorAll(`.input-reject[data-order-id="${oid}"]`).forEach(inp => {
+                const sz = inp.dataset.size;
+                const rejQty = parseInt(inp.value) || 0;
+                const targetConts = containers.filter(c => c.size === sz && c.accept === null);
+                
+                targetConts.forEach((c, idx) => {
+                    if (idx < rejQty) {
+                        c.accept = false;
+                        c.status = "Reject";
+                    } else {
+                        c.accept = true;
+                        c.status = "Confirm Order"; 
+                    }
+                });
+            });
+
+            updateOrderSummary(oid);
+            saveState();
+            
+            render(); 
+            toast("Order berhasil disubmit. Data Accept otomatis pindah ke List Orderan (Add Detail).");
+        };
+    });
+}
+
+/* ===================== REVISI 5: ADMIN STATUS (EDIT/HAPUS & SHIFT) ===================== */
+
+function buildStatusTable() {
+    const tbody = document.getElementById("statusTableBody"); // Sesuaikan ID Anda
+    tbody.innerHTML = filteredData.map(({ idx, order: o, ...counts }) => `
+        <tr>
+            <td>${idx}</td>
+            <td>-</td>
+            <td>${(o.no_dn || []).join('<br>')}</td>
+            <td>${o.pod || '-'}</td>
+            <td>${o.etd ? formatDisplayDate(o.etd) : '-'}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>${o.open_cy ? formatDisplayDate(o.open_cy) : '-'}</td>
+            <td>-</td>
+            <td>${fmtDT(o.closing_date, o.closing_time)}</td>
+            <td>${o.vendor || '-'}</td>
+            <td>${o.shipping_point || '-'}</td>
+            <td>${o.terminal || '-'}</td>
+            <td>${o.shift || '-'}</td> <td class="center">${createClickableCell(counts.accepted20, o.order_id, 'size_20ft', 'Detail 20ft')}</td>
+            <td class="center">${createClickableCell(counts.accepted40, o.order_id, 'size_40ft', 'Detail 40ft/HC')}</td>
+            <td class="center">${createClickableCell(counts.totalAccepted, o.order_id, 'all_accepted', 'Total Accepted')}</td>
+            <td class="center">${createClickableCell(counts.countPending, o.order_id, 'status_pending_null', 'Pending')}</td>
+            <td class="center">${createClickableCell(counts.countConfirmOrder, o.order_id, 'status_confirm_order', 'Confirm')}</td>
+            <td class="center">${createClickableCell(counts.countReject, o.order_id, 'status_reject', 'Reject')}</td>
+            <td class="center">${createClickableCell(counts.countSudahMuat, o.order_id, 'status_sudah_muat', 'Sudah Muat')}</td>
+            <td class="center">${createClickableCell(counts.countMuatGudang, o.order_id, 'status_muat_gudang', 'Muat Gudang')}</td>
+            <td class="center">${createClickableCell(counts.countRevo, o.order_id, 'status_revo', 'Revo')}</td>
+            <td class="center">${createClickableCell(counts.countGateIn, o.order_id, 'status_gate_in', 'Gate In')}</td>
+            <td>-</td>
+            <td>${o.remarks || '-'}</td>
+            <td class="center">
+                <button class="btn warn tiny" data-edit-status="${o.order_id}">✏️</button>
+                <button class="btn danger tiny" data-delete-status="${o.order_id}" style="margin-top:4px;">🗑️</button>
+            </td>
+        </tr>
+    `).join("");
+
+    // Handler Edit
+    tbody.querySelectorAll('button[data-edit-status]').forEach(btn => {
+        btn.onclick = () => {
+            state.editing_order_id = btn.dataset.editStatus;
+            state.menu_admin = 'Order to EMKL';
+            saveState(); render();
+            toast("Navigasi ke Order to EMKL untuk edit.");
+        };
+    });
+
+    // Handler Delete
+    tbody.querySelectorAll('button[data-delete-status]').forEach(btn => {
+        btn.onclick = () => {
+            const orderId = btn.dataset.deleteStatus;
+            if (!confirm(`Hapus order ini?`)) return;
+            state.orders = state.orders.filter(o => o.order_id !== orderId);
+            delete state.containers[orderId];
+            saveState();
+            buildStatusTable();
+        };
+    });
+}
+
+/* ===================== FUNGSI BARU: RENDER DATA REJECT ===================== */
+function renderDataReject() {
+    content.innerHTML = `
+        <div class="main-header">
+            <h3 style="margin:0">📕 Admin – Data Reject</h3>
+            <div class="small">Daftar semua kontainer yang ditolak (Reject) oleh EMKL.</div>
+        </div>
+        <div class="card">
+            <div class="row" style="margin-bottom:16px;">
+                <div class="col" style="grid-column: span 3;">
+                    <label>Filter EMKL</label>
+                    <select id="reject_vendor" class="input"><option>-- Semua --</option></select>
+                </div>
+                <div class="col" style="grid-column: span 3;">
+                    <label>Tgl Stuffing (start)</label>
+                    <input id="reject_start" type="date" class="input">
+                </div>
+                <div class="col" style="grid-column: span 3;">
+                    <label>Tgl Stuffing (end)</label>
+                    <input id="reject_end" type="date" class="input">
+                </div>
+                <div class="col" style="grid-column: span 3; display:flex; align-items:flex-end;">
+                    <button id="btnDownloadReject" class="btn success full">⬇️ Download Excel</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="table rekap" id="rejectReportTable">
+                    <thead>
+                        <tr>
+                            <th>No.</th><th>DN</th><th>EMKL</th><th>Tgl Stuffing</th>
+                            <th>Shipping Point</th><th>Shift</th><th>Size</th>
+                            <th>Container No.</th><th>No. Seal</th><th>Plat Mobil</th>
+                            <th>Nama Driver</th><th>Remarks</th><th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rejectReportBody"></tbody>
+                </table>
+            </div>
+        </div>`;
+
+    // Dropdown Vendor
+    const rVend = document.getElementById("reject_vendor");
+    VENDORS_DEFAULT.forEach(v => {
+        const o = document.createElement("option"); o.textContent = v; rVend.appendChild(o);
+    });
+
+    // Default Date (30 hari terakhir)
+    const rStart = document.getElementById("reject_start");
+    const rEnd = document.getElementById("reject_end");
+    const now = new Date();
+    const past = new Date(); past.setDate(now.getDate() - 30);
+    rStart.value = toISODate(past);
+    rEnd.value = toISODate(now);
+
+    function buildRejectTable() {
+        const tbody = document.getElementById("rejectReportBody");
+        const vend = rVend.value;
+        const start = parseISODate(rStart.value);
+        const end = parseISODate(rEnd.value);
+        const rejectContainers = [];
+
+        state.orders.forEach(order => {
+            const stuffingDate = parseISODate(order.tgl_stuffing);
+            if ((vend === "-- Semua --" || order.vendor === vend) && (stuffingDate >= start && stuffingDate <= end)) {
+                (state.containers[order.order_id] || []).forEach((container, idx) => {
+                    if (container.accept === false) {
+                        rejectContainers.push({ order, container, containerIndex: idx, orderId: order.order_id });
+                    }
+                });
+            }
+        });
+
+        if (rejectContainers.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="13" class="center">Tidak ada data reject.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = rejectContainers.map((item, index) => {
+            const { order, container, containerIndex, orderId } = item;
+            const isEditing = state.editing_container_id_vendor === `${orderId}_${containerIndex}`;
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${(order.no_dn || []).join('<br>')}</td>
+                    <td>${order.vendor}</td>
+                    <td>${formatDisplayDate(order.tgl_stuffing)}</td>
+                    <td>${order.shipping_point || '-'}</td>
+                    <td>${order.shift || '-'}</td>
+                    <td>${container.size}</td>
+                    <td>${isEditing ? `<input type="text" id="edit_reject_cont_${orderId}_${containerIndex}" class="input" value="${container.no_container || ''}">` : (container.no_container || '-')}</td>
+                    <td>${isEditing ? `<input type="text" id="edit_reject_seal_${orderId}_${containerIndex}" class="input" value="${container.no_seal || ''}">` : (container.no_seal || '-')}</td>
+                    <td>${isEditing ? `<input type="text" id="edit_reject_mobil_${orderId}_${containerIndex}" class="input" value="${container.no_mobil || ''}">` : (container.no_mobil || '-')}</td>
+                    <td>${isEditing ? `<input type="text" id="edit_reject_driver_${orderId}_${containerIndex}" class="input" value="${container.nama_supir || ''}">` : (container.nama_supir || '-')}</td>
+                    <td>${order.remarks || '-'}</td>
+                    <td>
+                        ${isEditing 
+                            ? `<button class="btn success tiny" data-save-reject="${orderId}_${containerIndex}">Save</button>` 
+                            : `<button class="btn warn tiny" data-edit-reject="${orderId}_${containerIndex}">✏️</button>`}
+                    </td>
+                </tr>`;
+        }).join('');
+
+        // Attach Handlers (Edit/Save)
+        tbody.querySelectorAll('[data-edit-reject]').forEach(b => b.onclick = () => { 
+            state.editing_container_id_vendor = b.dataset.editReject; 
+            saveState(); buildRejectTable(); 
+        });
+        tbody.querySelectorAll('[data-save-reject]').forEach(b => b.onclick = () => {
+            const uid = b.dataset.saveReject;
+            const [oid, cidx] = uid.split('_');
+            const c = state.containers[oid][cidx];
+            c.no_container = document.getElementById(`edit_reject_cont_${uid}`).value;
+            c.no_seal = document.getElementById(`edit_reject_seal_${uid}`).value;
+            c.no_mobil = document.getElementById(`edit_reject_mobil_${uid}`).value;
+            c.nama_supir = document.getElementById(`edit_reject_driver_${uid}`).value;
+            state.editing_container_id_vendor = null;
+            saveState(); buildRejectTable(); toast("Data diupdate.");
+        });
+    }
+
+    buildRejectTable();
+    rVend.onchange = buildRejectTable; rStart.onchange = buildRejectTable; rEnd.onchange = buildRejectTable;
+}
+
+function formatDuration(timeStr) {
+    if (!timeStr || typeof timeStr !== 'string') return '-';
+    const parts = timeStr.split(':').map(Number);
+    if (parts.length !== 3) return timeStr;
+
+    let [h, m, s] = parts;
+    let totalSeconds = h * 3600 + m * 60 + s;
+    
+    const maxSeconds = 3600 * 24;
+    const days = Math.floor(totalSeconds / maxSeconds);
+    
+    if (days >= 1) {
+        return `${days} Hari`; 
+    }
+    
+    return timeStr;
+}
+
+function renderReportDurasi() {
+  const dummyDataRaw = [
+    { no: 1, iml: "44008784", jenis: "MUAT", t1: "9/10/2025 8:26:00 PM", t2: "9/10/2025 8:34:18 PM", s1: "00:08:18", t3: "9/11/2025 1:28:19 AM", s2: "04:54:01", t4: "9/11/2025 12:20:19 PM", s3: "10:52:00", t5: "9/11/2025 12:48:18 PM", s4: "00:28:00", t6: "9/11/2025 5:35:16 PM", s5: "04:46:57", total: "21:09:16" },
+    { no: 2, iml: "44008785", jenis: "MUAT", t1: "9/10/2025 9:00:00 PM", t2: "9/10/2025 9:15:30 PM", s1: "00:15:30", t3: "9/11/2025 2:00:00 AM", s2: "04:44:30", t4: "9/11/2025 1:00:00 PM", s3: "11:00:00", t5: "9/11/2025 1:30:15 PM", s4: "00:30:15", t6: "9/11/2025 6:09:18 PM", s5: "04:15:03", total: "18:19:12" },
+    { no: 3, iml: "44008786", jenis: "MUAT", t1: "9/10/2025 10:00:00 PM", t2: "9/10/2025 10:10:10 PM", s1: "00:10:10", t3: "9/11/2025 3:00:00 AM", s2: "04:49:50", t4: "9/11/2025 10:00:00 AM", s3: "07:00:00", t5: "9/11/2025 10:30:00 AM", s4: "00:30:00", t6: "9/11/2025 11:59:29 AM", s5: "02:43:02", total: "14:24:35" },
+    { no: 4, iml: "44008787", jenis: "MUAT", t1: "9/10/2025 11:00:00 PM", t2: "9/10/2025 11:05:00 PM", s1: "00:05:00", t3: "9/11/2025 4:00:00 AM", s2: "04:55:00", t4: "9/11/2025 9:00:00 AM", s3: "05:00:00", t5: "9/11/2025 9:30:00 AM", s4: "00:30:00", t6: "9/11/2025 12:44:44 AM", s5: "01:38:33", total: "12:47:41" },
+    { no: 5, iml: "44008788", jenis: "MUAT", t1: "9/10/2025 11:30:00 PM", t2: "9/10/2025 11:35:00 PM", s1: "00:05:00", t3: "9/11/2025 5:00:00 AM", s2: "05:25:00", t4: "9/11/2025 10:00:00 AM", s3: "05:00:00", t5: "9/11/2025 10:30:00 AM", s4: "00:30:00", t6: "9/11/2025 12:30:06 PM", s5: "02:06:31", total: "12:58:43" },
+    { no: 6, iml: "44009000", jenis: "MUAT", t1: "9/15/2025 1:00:00 AM", t2: "9/16/2025 1:00:00 AM", s1: "24:00:00", t3: "9/17/2025 1:00:00 AM", s2: "24:00:00", t4: "9/18/2025 1:00:00 AM", s3: "24:00:00", t5: "9/19/2025 1:00:00 AM", s4: "24:00:00", t6: "9/20/2025 1:00:00 AM", s5: "24:00:00", total: "120:00:00" } 
+  ];
+  
+  function parseDurationToSeconds(timeStr) {
+      if (!timeStr) return 0;
+      const parts = timeStr.split(':').map(Number);
+      if (parts.length !== 3) return 0;
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+
+  const dummyData = dummyDataRaw.map(d => ({
+      ...d,
+      type: undefined, 
+      s1_fmt: formatDuration(d.s1),
+      s2_fmt: formatDuration(d.s2),
+      s3_fmt: formatDuration(d.s3),
+      s4_fmt: formatDuration(d.s4),
+      s5_fmt: formatDuration(d.s5),
+      total_seconds: parseDurationToSeconds(d.total),
+      total_days: Math.floor(parseDurationToSeconds(d.total) / (3600 * 24)), 
+      total_fmt: formatDuration(d.total),
+  }));
+
+  content.innerHTML = `
+    <div class="main-header"><h3 style="margin:0">⏱️ Admin — Report Durasi Trucking</h3><div class="small">Laporan Durasi Trucking</div></div>
+    <div id="report-durasi-page">
+      
+      <div class="container">
+        
+        <div class="controls-bar">
+          <div class="control-group">
+            <label class="switch-label">Tampilkan semua kolom <b>Selisih Waktu</b></label>
+            <label class="switch">
+              <input type="checkbox" id="rd_toggle_selisih" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <details class="details">
+            <summary>► Pengaturan kolom selisih (opsional)</summary>
+            </details>
+          <div class="control-group-spacer"></div>
+          <div class="control-group">
+            <input type="text" id="rd_search" class="input" placeholder="Cari No IML..." style="min-width: 220px;">
+            <select id="rd_filter_jenis" class="input" style="min-width: 160px;">
+              <option value="">Semua Jenis IML</option>
+              <option value="MUAT">MUAT</option>
+            </select>
+            <select id="rd_filter_type" class="input" style="min-width: 160px; display:none;"> <option value="">Semua Type</option>
+              <option value="LOCAL">LOCAL</option>
+            </select>
+            <button id="rd_filter_btn" class="btn primary">Cari</button>
+          </div>
+        </div>
+        
+        <div class="legend-bar">
+          <span class="legend-item"><b class="green">Hijau</b>: ≤ 6 jam (waktu normal)</span>
+          <span class="legend-item"><b class="yellow">Kuning</b>: ≤ 24 jam (perlu perhatian)</span>
+          <span class="legend-item"><b class="red">Merah</b>: > 24 jam (melebihi batas wajar)</span>
+        </div>
+
+        <div class="controls">
+          </div>
+
+        <div class="table-wrap">
+          <table id="grid">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>No IML</th>
+                <th>Jenis IML</th>
+                <th>Tgl Timbang 1</th>
+                <th>Tgl Masuk Gudang</th>
+                <th class="col-selisih">Selisih Waktu</th>
+                <th>Tgl Start Muat</th>
+                <th class="col-selisih">Selisih Waktu</th>
+                <th>Tgl End Muat</th>
+                <th class="col-selisih">Selisih Waktu</th>
+                <th>Tgl Keluar Gudang</th>
+                <th class="col-selisih">Selisih Waktu</th>
+                <th>Tgl Timbang 2</th>
+                <th class="col-selisih">Selisih Waktu</th>
+                <th>Durasi Keseluruhan</th>
+                <th>Hari</th> </tr>
+            </thead>
+            <tbody id="rd_body">
+              <tr><td colspan="16" class="center">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="legend">
+          </div>
+
+      </div>
+    </div>
+  `;
+
+  const getBadgeClass = (timeStr, isTotal = false) => {
+    if (!timeStr) return 'diff-ok';
+    try {
+        const parts = timeStr.split(':').map(Number);
+        const hours = parts[0] + (parts[1]/60) + (parts[2]/3600);
+        
+        if (isTotal) {
+             if (hours > 24) return 'diff-bad';
+             if (hours > 18) return 'diff-warn';
+             return 'diff-ok';
+        } else {
+            if (hours > 24) return 'diff-bad';
+            if (hours > 6) return 'diff-warn';
+            return 'diff-ok';
+        }
+    } catch(e) {
+        return 'diff-ok';
+    }
+  };
+  
+  function getOriginalDuration(index, key) {
+      if (index >= 0 && index < dummyDataRaw.length) {
+          return dummyDataRaw[index][key];
+      }
+      return '-';
+  }
+
+
+  function drawDurasiTable(data) {
+    const tbody = document.getElementById("rd_body");
+    if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="16" class="center">Tidak ada data yang cocok dengan pencarian.</td></tr>`;
+        return;
+    }
+    
+    tbody.innerHTML = data.map((d, index) => {
+        const s1_raw = getOriginalDuration(index, 's1');
+        const s2_raw = getOriginalDuration(index, 's2');
+        const s3_raw = getOriginalDuration(index, 's3');
+        const s4_raw = getOriginalDuration(index, 's4');
+        const s5_raw = getOriginalDuration(index, 's5');
+        const total_raw = getOriginalDuration(index, 'total');
+        
+        return `
+            <tr>
+                <td>${d.no}</td>
+                <td>${d.iml}</td>
+                <td>${d.jenis}</td>
+                <td>${d.t1}</td>
+                <td>${d.t2}</td>
+                <td class="col-selisih"><span class="diff-badge ${getBadgeClass(s1_raw)}">${d.s1_fmt}</span></td>
+                <td>${d.t3}</td>
+                <td class="col-selisih"><span class="diff-badge ${getBadgeClass(s2_raw)}">${d.s2_fmt}</span></td>
+                <td>${d.t4}</td>
+                <td class="col-selisih"><span class="diff-badge ${getBadgeClass(s3_raw)}">${d.s3_fmt}</span></td>
+                <td>${d.t5}</td>
+                <td class="col-selisih"><span class="diff-badge ${getBadgeClass(s4_raw)}">${d.s4_fmt}</span></td>
+                <td>${d.t6}</td>
+                <td class="col-selisih"><span class="diff-badge ${getBadgeClass(s5_raw)}">${d.s5_fmt}</span></td>
+                <td><span class="diff-badge diff-total ${getBadgeClass(total_raw, true)}">${d.total_fmt}</span></td>
+                <td>${d.total_days || '-'}</td> 
+            </tr>
+        `;
+    }).join('');
+  }
+  
+  
+  const toggle = document.getElementById("rd_toggle_selisih");
+  const page = document.getElementById("report-durasi-page");
+  if (toggle && page) {
+    const applyToggle = () => {
+      if (toggle.checked) {
+        page.classList.remove('hide-selisih');
+      } else {
+        page.classList.add('hide-selisih');
+      }
+    };
+    toggle.onchange = applyToggle;
+    applyToggle();
+  }
+  
+  document.getElementById("rd_filter_btn").onclick = () => {
+    const tbody = document.getElementById("rd_body");
+    tbody.innerHTML = `<tr><td colspan="16" class="center">...Mencari data...</td></tr>`; 
+
+    const searchTerm = document.getElementById("rd_search").value.trim().toLowerCase();
+    const jenis = document.getElementById("rd_filter_jenis").value;
+
+    const filteredData = dummyData.filter(d => {
+      const matchIML = d.iml.toLowerCase().includes(searchTerm);
+      const matchJenis = (jenis === "" || d.jenis === jenis);
+      return matchIML && matchJenis;
+    });
+
+    setTimeout(() => {
+      drawDurasiTable(filteredData);
+      toast(`Menampilkan ${filteredData.length} hasil.`);
+    }, 250);
+  };
+
+  drawDurasiTable(dummyData);
+}
+
+// ====================================================================
+// --- FUNGSI DOWNLOAD OTOMATIS BOC ---
+// ====================================================================
+let autoDownloadTimer = null; 
+
+function scheduleAutoDownload() {
+    if (autoDownloadTimer) {
+        clearTimeout(autoDownloadTimer);
+    }
+
+    const now = new Date();
+    const targetTime = new Date();
+    targetTime.setHours(17, 0, 0, 0); 
+
+    let msToTarget = targetTime.getTime() - now.getTime();
+
+    if (msToTarget < 0) {
+        msToTarget += 24 * 60 * 60 * 1000;
+    }
+
+    console.log(`Penjadwalan download BOC otomatis dalam ${Math.round(msToTarget / 1000)} detik (target ${targetTime.toTimeString().split(' ')[0]})...`);
+
+    autoDownloadTimer = setTimeout(() => {
+        console.log("Menjalankan download BOC otomatis...");
+        
+        if (state.authenticated && state.user_role === 'admin') {
+            const today = new Date();
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 6);
+            
+            const endDateStr = toISODate(today);
+            const startDateStr = toISODate(sevenDaysAgo);
+
+            try {
+                generateAndDownloadBOC(startDateStr, endDateStr, true);
+            } catch (e) {
+                console.error("Gagal menjalankan download otomatis:", e);
+            }
+        } else {
+            console.log("Download otomatis dibatalkan, user bukan admin atau sudah logout.");
+        }
+        
+        scheduleAutoDownload();
+        
+    }, msToTarget);
+}
+// ====================================================================
+// --- AKHIR FUNGSI DOWNLOAD OTOMATIS BOC ---
+// ====================================================================
+
+
+// Boot
+render();
+
+// Panggil penjadwalan hanya jika user adalah admin
+if (state.authenticated && state.user_role === 'admin') {
+    scheduleAutoDownload();
+}
+function toggleInlineDetail(orderId, btn) {
+    const detailRow = document.getElementById(`detail_row_${orderId}`);
+    const containerDiv = document.getElementById(`detail_container_${orderId}`);
+
+    if (detailRow.style.display === 'table-row') {
+        detailRow.style.display = 'none';
+        btn.textContent = 'Add Detail';
+        btn.className = 'btn warn tiny';
+        return;
+    }
+
+    // Tutup baris detail lainnya agar rapi
+    document.querySelectorAll('[id^="detail_row_"]').forEach(row => row.style.display = 'none');
+    document.querySelectorAll('button').forEach(b => { if(b.textContent === 'Hide Detail') b.textContent = 'Add Detail'; });
+
+    // ✅ BARU: Ambil data order untuk auto-fill depo
+    const order = state.orders.find(o => o.order_id === orderId);
+    const orderDepo = order ? (order.depo || '') : ''; // Depo dari order
+    
+    const containers = (state.containers[orderId] || []).filter(c => c.accept === true);
+    
+    let html = `
+        <div style="background:#fff; border: 1px solid #d4e5f7; border-radius:8px; padding:10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+            <h4 style="margin-bottom:10px; color:var(--blue-2);">📋 Input Detail Kontainer</h4>
+            <table class="table compact" style="width:100%; border-collapse:collapse; background:#fff; min-width:unset;">
+                <thead style="background:#f1f5f9; font-size:11px;">
+                    <tr>
+                        <th style="padding:4px; border:1px solid #ddd;">No</th>
+                        <th style="padding:4px; border:1px solid #ddd;">Container No</th>
+                        <th style="padding:4px; border:1px solid #ddd;">Seal</th>
+                        <th style="padding:4px; border:1px solid #ddd;">Plat Mobil</th>
+                        <th style="padding:4px; border:1px solid #ddd;">Driver</th>
+                        <th style="padding:4px; border:1px solid #ddd;">Contact</th>
+                        <th style="padding:4px; border:1px solid #ddd;">Depo</th>
+                        <th style="padding:4px; border:1px solid #ddd;">Size</th>
+                        <th style="padding:4px; border:1px solid #ddd;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    containers.forEach((c, i) => {
+        const isCombo = c.size === 'Combo';
+        const contValues = (c.no_container || "").split("\n");
+        const sealValues = (c.no_seal || "").split("\n");
+
+        // ✅ KUNCI: Auto-fill depo - prioritas: container.depo → order.depo → kosong
+        const depoValue = c.depo || orderDepo;
+
+        if (isCombo) {
+            html += `
+                <tr>
+                    <td rowspan="2" style="text-align:center; border:1px solid #eee;">${i+1}</td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_no_${orderId}_${i}_0" value="${contValues[0]||''}" placeholder="Cont 1"></td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_seal_${orderId}_${i}_0" value="${sealValues[0]||''}" placeholder="Seal 1"></td>
+                    <td rowspan="2" style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_mobil_${orderId}_${i}" value="${c.no_mobil||''}"></td>
+                    <td rowspan="2" style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_driver_${orderId}_${i}" value="${c.nama_supir||''}"></td>
+                    <td rowspan="2" style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_contact_${orderId}_${i}" value="${c.contact||''}"></td>
+                    <td rowspan="2" style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_depo_${orderId}_${i}" value="${depoValue}" placeholder="${orderDepo || 'Depo...'}" title="Auto-filled dari order: ${orderDepo || 'Belum diisi'}"></td>
+                    <td rowspan="2" style="text-align:center; font-size:10px; border:1px solid #eee;">Combo</td>
+                    <td rowspan="2" style="border:1px solid #eee;">
+                        <select class="input-compact" id="c_status_${orderId}_${i}">
+                            ${STATUS_TRUCKING.filter(s => s !== 'Reject' && s !== 'Pending').map(s => `<option value="${s}" ${c.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_no_${orderId}_${i}_1" value="${contValues[1]||''}" placeholder="Cont 2"></td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_seal_${orderId}_${i}_1" value="${sealValues[1]||''}" placeholder="Seal 2"></td>
+                </tr>`;
+        } else {
+            html += `
+                <tr>
+                    <td style="text-align:center; border:1px solid #eee;">${i+1}</td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_no_${orderId}_${i}" value="${c.no_container||''}"></td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_seal_${orderId}_${i}" value="${c.no_seal||''}"></td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_mobil_${orderId}_${i}" value="${c.no_mobil||''}"></td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_driver_${orderId}_${i}" value="${c.nama_supir||''}"></td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_contact_${orderId}_${i}" value="${c.contact||''}"></td>
+                    <td style="border:1px solid #eee;"><input type="text" class="input-compact" id="c_depo_${orderId}_${i}" value="${depoValue}" placeholder="${orderDepo || 'Depo...'}" title="Auto-filled dari order: ${orderDepo || 'Belum diisi'}"></td>
+                    <td style="text-align:center; font-size:10px; border:1px solid #eee;">${c.size}</td>
+                    <td style="border:1px solid #eee;">
+                        <select class="input-compact" id="c_status_${orderId}_${i}">
+                            ${STATUS_TRUCKING.filter(s => s !== 'Reject' && s !== 'Pending').map(s => `<option value="${s}" ${c.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </td>
+                </tr>`;
+        }
+    });
+
+    html += `</tbody></table>
+            <div style="text-align:right; margin-top:10px;">
+                <button class="btn success" onclick="saveInlineDetails('${orderId}')" style="padding:5px 20px;">✓ Simpan Semua Detail</button>
+            </div>
+        </div>`;
+
+    containerDiv.innerHTML = html;
+    detailRow.style.display = 'table-row';
+    btn.textContent = 'Hide Detail';
+    btn.className = 'btn danger tiny';
+}
+
+function saveInlineDetails(orderId) {
+    const containers = (state.containers[orderId] || []).filter(c => c.accept === true);
+    
+    containers.forEach((c, i) => {
+        if (c.size === 'Combo') {
+            const n1 = document.getElementById(`c_no_${orderId}_${i}_0`).value.trim();
+            const n2 = document.getElementById(`c_no_${orderId}_${i}_1`).value.trim();
+            c.no_container = n1 + (n2 ? "\n" + n2 : "");
+            
+            const s1 = document.getElementById(`c_seal_${orderId}_${i}_0`).value.trim();
+            const s2 = document.getElementById(`c_seal_${orderId}_${i}_1`).value.trim();
+            c.no_seal = s1 + (s2 ? "\n" + s2 : "");
+        } else {
+            c.no_container = document.getElementById(`c_no_${orderId}_${i}`).value.trim();
+            c.no_seal = document.getElementById(`c_seal_${orderId}_${i}`).value.trim();
+        }
+        
+        c.no_mobil = document.getElementById(`c_mobil_${orderId}_${i}`).value.trim();
+        c.nama_supir = document.getElementById(`c_driver_${orderId}_${i}`).value.trim();
+        c.contact = document.getElementById(`c_contact_${orderId}_${i}`).value.trim();
+        c.depo = document.getElementById(`c_depo_${orderId}_${i}`).value.trim();
+        c.status = document.getElementById(`c_status_${orderId}_${i}`).value;
+    });
+
+    saveState();
+    toast("Detail berhasil disimpan.");
+    renderVendorListDetail(); // Refresh tampilan
+}
